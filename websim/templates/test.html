@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>UKA21 WebSim</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <canvas id='application'></canvas>
+    <script type="module">
+        import {init} from './static/js/sim.js'
+        // create a PlayCanvas application
+        const canvas = document.getElementById('application');
+        init(canvas);        
+    </script>
+</body>
+</html>
