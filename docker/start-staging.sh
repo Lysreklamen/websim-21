@@ -2,4 +2,4 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-TYPE=staging "$DIR/start.sh"
+TYPE=staging "$DIR/start.sh" "$@"
