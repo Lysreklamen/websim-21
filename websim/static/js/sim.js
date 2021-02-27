@@ -1,11 +1,18 @@
 import * as pc from './playcanvas.js'
+import * as pcx from './extras/index.js'
 
 export function init(canvas) {
-    const app = new pc.Application(canvas);
+    const app = new pc.Application(canvas, {
+        mouse: new pc.Mouse(canvas),
+        keyboard: new pc.Keyboard(window)
+    });
+    globalThis.pc = pc; // export pc such that scripts work. Not sure if this is the best way
 
     // fill the available space at full resolution
     app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
+
+    let miniStats = new pcx.MiniStats(app);
 
     // ensure canvas is resized when window changes size
     window.addEventListener('resize', () => app.resizeCanvas());
@@ -85,6 +92,13 @@ export function init(canvas) {
     });
     app.root.addChild(camera);
     camera.setPosition(0, 0, 7);
+
+    // add the fly camera script to the camera
+    app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
+        camera.addComponent("script");
+        camera.script.create("flyCamera");
+    });
+
 
     // create directional light entity
     const light = new pc.Entity('light');
