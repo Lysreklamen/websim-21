@@ -26,8 +26,12 @@ function HSVtoRGB(h, s, v) {
     };
 }
 
+let app = null; // pc.Application
+let bulbs = []; // map of bulb ID to bulb node
+let active_frame_data = new Array(512).fill(1);
+
 export function init(canvas) {
-    const app = new pc.Application(canvas, {
+    app = new pc.Application(canvas, {
         mouse: new pc.Mouse(canvas),
         keyboard: new pc.Keyboard(window)
     });
@@ -45,9 +49,6 @@ export function init(canvas) {
     const gesims = new pc.Entity("gesism");
     app.root.addChild(gesims);
     gesims.translate(0, 0, 0);
-
-    let all_bulbs = [];
-
 
     fetch("static/uka17.json")
         .then(response => response.json())
@@ -82,29 +83,28 @@ export function init(canvas) {
                 for(const j_bulb of j_group["bulbs"]) {
                     const bulb_id = j_bulb[0];
                     const bulb_pos = [j_bulb[1], j_bulb[2]];
+                    const bulb_channels = j_bulb.slice(3);
                     const bulb = new pc.Entity("bulb_"+bulb_id);
                     group.addChild(bulb);
-                    all_bulbs.push(bulb);
-                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.05);
+                    bulbs.push(bulb);
+                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.03);
 
                     bulb.addComponent('model', {
                         type: 'sphere'
                     });
-                    bulb.model.material = new pc.StandardMaterial();
-                    bulb.model.material.diffuse.set(0.4, 0.4, 0.4);
-                    bulb.model.material.emissive.set(1, 0, 0)
-                    bulb.model.material.emissiveIntensity = 0.8;
+                    bulb.model.material = new pc.BasicMaterial();
+                    bulb.model.material.color.set(0.2, 0.2, 0.2);
                     bulb.model.material.update();
                     bulb.setLocalScale(0.05, 0.05, 0.05); // scale to 5cm diameter
 
-                    // let bulb_light = new pc.Entity();
                     bulb.addComponent('light', {
                         type: "point",
-                        color: new pc.Color(1, 0, 0),
-                        intensity: 0.5,
-                        range: 0.5
+                        color: new pc.Color(0.1, 0.1, 0.1),
+                        intensity: 1,
+                        range: 0.4
                     });
-                    // bulb.addChild(bulb_light);
+                    
+                    bulb.channels = bulb_channels;
                 }
 
                 gesims.addChild(group);
@@ -130,24 +130,22 @@ export function init(canvas) {
 
     // create directional light entity
     const light = new pc.Entity('light');
-    light.addComponent('light');
+    light.addComponent('light', {
+        intensity: 0.3,
+    });
     app.root.addChild(light);
     light.setEulerAngles(45, 0, 0);
 
-    // rotate the box according to the delta time since the last frame
-    // app.on('update', dt => box.rotate(10 * dt, 20 * dt, 30 * dt));
-    let total_time = 0.0;
     app.on('update', dt => {
-        total_time += dt*0.1;
-        let c = HSVtoRGB(total_time, 1.0, 1.0);
-        for (const b of all_bulbs) {
-            b.model.material.diffuse.set(c.r, c.g, c.b);
-            b.model.material.emissive.set(c.r, c.g, c.b);
-            b.model.material.update()
-            b.light.color = new pc.Color(c.r, c.g, c.b);
-            // const light = b.children[0];
-            // light.light.color = ;
-            // console.log(light);
+        for (const bulb of bulbs) {
+            const r = active_frame_data[bulb.channels[0]];
+            const g = active_frame_data[bulb.channels[1]];
+            const b = active_frame_data[bulb.channels[2]];
+            bulb.model.material.color.set(r, g, b);
+            // bulb.model.material.diffuse.set(r, g, b);
+            // bulb.model.material.emissive.set(r, g, b);
+            bulb.model.material.update()
+            bulb.light.color = new pc.Color(r, g, b);
         }
     });
 
