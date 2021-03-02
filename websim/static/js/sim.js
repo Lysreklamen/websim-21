@@ -1,34 +1,9 @@
 import * as pc from './playcanvas.js'
 import * as pcx from './extras/index.js'
 
-function HSVtoRGB(h, s, v) {
-    var r, g, b, i, f, p, q, t;
-    if (arguments.length === 1) {
-        s = h.s, v = h.v, h = h.h;
-    }
-    i = Math.floor(h * 6);
-    f = h * 6 - i;
-    p = v * (1 - s);
-    q = v * (1 - f * s);
-    t = v * (1 - (1 - f) * s);
-    switch (i % 6) {
-        case 0: r = v, g = t, b = p; break;
-        case 1: r = q, g = v, b = p; break;
-        case 2: r = p, g = v, b = t; break;
-        case 3: r = p, g = q, b = v; break;
-        case 4: r = t, g = p, b = v; break;
-        case 5: r = v, g = p, b = q; break;
-    }
-    return {
-        r: r,
-        g: g,
-        b: b
-    };
-}
-
 let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
-let active_frame_data = new Array(512).fill(1);
+let active_frame_data = new Array(512).fill(0.5);
 
 export function init(canvas) {
     app = new pc.Application(canvas, {
@@ -68,6 +43,8 @@ export function init(canvas) {
                 app.loader.load("static/textures/sign_bg.png", "texture", function(err, texture){
                     let material = new pc.StandardMaterial();
                     material.diffuseMap = texture;
+                    material.opacityMap = texture;
+                    material.blendType = pc.BLEND_NORMAL;
                     material.update();
             
                     sign_bg.model.material = material;
@@ -87,15 +64,16 @@ export function init(canvas) {
                     const bulb = new pc.Entity("bulb_"+bulb_id);
                     group.addChild(bulb);
                     bulbs.push(bulb);
-                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.03);
 
                     bulb.addComponent('model', {
                         type: 'sphere'
                     });
+                    bulb.setLocalScale(0.05, 0.05, 0.05); // scale to 5cm diameter
+                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.03);
+
                     bulb.model.material = new pc.BasicMaterial();
                     bulb.model.material.color.set(0.2, 0.2, 0.2);
                     bulb.model.material.update();
-                    bulb.setLocalScale(0.05, 0.05, 0.05); // scale to 5cm diameter
 
                     bulb.addComponent('light', {
                         type: "point",
@@ -138,16 +116,25 @@ export function init(canvas) {
 
     app.on('update', dt => {
         for (const bulb of bulbs) {
-            const r = active_frame_data[bulb.channels[0]];
-            const g = active_frame_data[bulb.channels[1]];
-            const b = active_frame_data[bulb.channels[2]];
-            bulb.model.material.color.set(r, g, b);
-            // bulb.model.material.diffuse.set(r, g, b);
-            // bulb.model.material.emissive.set(r, g, b);
+            // channels are 1 indexed, but data is zero indexed
+            const r = active_frame_data[bulb.channels[0]-1]; 
+            const g = active_frame_data[bulb.channels[1]-1];
+            const b = active_frame_data[bulb.channels[2]-1];
+            if (r === undefined || g === undefined || b === undefined) {
+                alert("could not find frame data for bulb");
+            }
+            // TODO improve the algorithm below
+            // We do not want the bulbs to become completely black
+            // as the bulbs themselves are white.
+            bulb.model.material.color.set(0.2+r, 0.2+g, 0.2+b);
             bulb.model.material.update()
             bulb.light.color = new pc.Color(r, g, b);
         }
     });
 
     app.start();
+}
+
+export function pushFrame(frame_data) {
+    active_frame_data = frame_data;
 }
