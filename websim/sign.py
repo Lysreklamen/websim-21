@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 from typing import List
 
-SCRIPT_DIR = Path(__file__).parent
+SCRIPT_DIR = Path(__file__).parent.absolute()
 SIGNS_DIR = Path(SCRIPT_DIR, "signs")
 
 class Sign:

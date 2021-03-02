@@ -6,5 +6,5 @@ WORKDIR /app
 
 ADD Pipfile Pipfile.lock uwsgi.ini ./
 RUN pipenv install --system --deploy --ignore-pipfile
-ADD websim websim
+COPY websim websim
 CMD ["uwsgi", "uwsgi.ini"]
