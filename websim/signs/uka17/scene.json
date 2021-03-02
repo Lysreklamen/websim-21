@@ -2,7 +2,7 @@
   "format_versin": "v0.1.0",
   "background": {
     "size": [10.015, 2.499],
-    "texture": "textures/uka17-background.png"
+    "texture": "background.png"
   },
   "groups": [
     {

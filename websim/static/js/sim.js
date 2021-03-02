@@ -21,11 +21,79 @@ export function init(canvas) {
     // ensure canvas is resized when window changes size
     window.addEventListener('resize', () => app.resizeCanvas());
 
-    const gesims = new pc.Entity("gesism");
+    const gesims = new pc.Entity("gesims");
     app.root.addChild(gesims);
     gesims.translate(0, 0, 0);
 
-    fetch("static/uka17.json")
+    // create camera entity
+    const camera = new pc.Entity('camera');
+    camera.addComponent('camera', {
+        clearColor: new pc.Color(0.1, 0.1, 0.1)
+    });
+    app.root.addChild(camera);
+    camera.setPosition(0, 0, 7);
+
+    // add the fly camera script to the camera
+    app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
+        camera.addComponent("script");
+        camera.script.create("flyCamera");
+    });
+
+
+    // create directional light entity
+    const light = new pc.Entity('light');
+    light.addComponent('light', {
+        intensity: 0.3,
+    });
+    app.root.addChild(light);
+    light.setEulerAngles(45, 0, 0);
+
+    app.on('update', dt => {
+        for (const bulb of bulbs) {
+            // channels are 1 indexed, but data is zero indexed
+            const r = active_frame_data[bulb.channels[0]-1]; 
+            const g = active_frame_data[bulb.channels[1]-1];
+            const b = active_frame_data[bulb.channels[2]-1];
+            if (r === undefined || g === undefined || b === undefined) {
+                alert("could not find frame data for bulb");
+            }
+            // TODO improve the algorithm below
+            // We do not want the bulbs to become completely black
+            // as the bulbs themselves are white.
+            bulb.model.material.color.set(0.2+r, 0.2+g, 0.2+b);
+            bulb.model.material.update()
+            bulb.light.color = new pc.Color(r, g, b);
+        }
+    });
+
+    app.start();
+}
+
+export function reset() {
+    // Recreate the scene root from the app
+    const gesims = app.root.findByName("gesims");
+    let scene_root = gesims.findByName("scene_root");
+    if (scene_root !== undefined) {
+        gesims.removeChild(scene_root);
+    }
+    scene_root = new pc.Entity("scene_root")
+    gesims.addChild(scene_root);
+
+    // Reset all the bulbs
+    bulbs = [];
+    // Reset the frame data to mid values
+    active_frame_data = new Array(512).fill(0.5);
+}
+
+export function loadSign(sign_name) {
+    // Reset the scene first
+    reset();
+
+    const base_url = "api/signs/"+sign_name+"/";
+    const scene_root = app.root.findByName("scene_root");
+
+
+    fetch(base_url+"scene.json")
         .then(response => response.json())
         .then(data => {
             // create box entity
@@ -37,10 +105,10 @@ export function init(canvas) {
                 sign_bg.rotate(90, 0, 0);
                 sign_bg.setLocalScale(data.background.size[0], 1, data.background.size[1]);
                 sign_bg.translate(0, data.background.size[1]/2, 0);
-                gesims.addChild(sign_bg);
+                scene_root.addChild(sign_bg);
                 
 
-                app.loader.load("static/textures/sign_bg.png", "texture", function(err, texture){
+                app.loader.load(base_url+"assets/"+data.background.texture, "texture", function(err, texture){
                     let material = new pc.StandardMaterial();
                     material.diffuseMap = texture;
                     material.opacityMap = texture;
@@ -85,54 +153,9 @@ export function init(canvas) {
                     bulb.channels = bulb_channels;
                 }
 
-                gesims.addChild(group);
+                scene_root.addChild(group);
             }
         });
-
-    
-
-    // create camera entity
-    const camera = new pc.Entity('camera');
-    camera.addComponent('camera', {
-        clearColor: new pc.Color(0.1, 0.1, 0.1)
-    });
-    app.root.addChild(camera);
-    camera.setPosition(0, 0, 7);
-
-    // add the fly camera script to the camera
-    app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
-        camera.addComponent("script");
-        camera.script.create("flyCamera");
-    });
-
-
-    // create directional light entity
-    const light = new pc.Entity('light');
-    light.addComponent('light', {
-        intensity: 0.3,
-    });
-    app.root.addChild(light);
-    light.setEulerAngles(45, 0, 0);
-
-    app.on('update', dt => {
-        for (const bulb of bulbs) {
-            // channels are 1 indexed, but data is zero indexed
-            const r = active_frame_data[bulb.channels[0]-1]; 
-            const g = active_frame_data[bulb.channels[1]-1];
-            const b = active_frame_data[bulb.channels[2]-1];
-            if (r === undefined || g === undefined || b === undefined) {
-                alert("could not find frame data for bulb");
-            }
-            // TODO improve the algorithm below
-            // We do not want the bulbs to become completely black
-            // as the bulbs themselves are white.
-            bulb.model.material.color.set(0.2+r, 0.2+g, 0.2+b);
-            bulb.model.material.update()
-            bulb.light.color = new pc.Color(r, g, b);
-        }
-    });
-
-    app.start();
 }
 
 export function pushFrame(frame_data) {

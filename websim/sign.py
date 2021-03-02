@@ -1,0 +1,61 @@
+
+from pathlib import Path
+import re
+from typing import List
+
+SCRIPT_DIR = Path(__file__).parent
+SIGNS_DIR = Path(SCRIPT_DIR, "signs")
+
+class Sign:
+    def __init__(self, name: str):
+        if not re.match("^[a-zA-Z0-9\-]+$", name):
+            raise ValueError("Invalid sign name")
+        
+        sign_dir = Path(SIGNS_DIR, name)
+        if not sign_dir.relative_to(SIGNS_DIR):
+            raise ValueError("Path traversal attempt detected.")
+
+        if not sign_dir.exists() or not sign_dir.is_dir():
+            raise ValueError("Sign does not exist")
+
+        self.sign_dir = sign_dir
+
+    @property
+    def scene_def(self) -> Path:
+        return Path(self.sign_dir, "scene.json")
+
+    @property
+    def assets_dir(self) -> Path:
+        return Path(self.sign_dir, "assets")
+
+    def get_asset(self, name: str) -> Path:
+        if name.startswith("."):
+            raise ValueError("Asset can not start with a '.' character.")
+        
+        asset_path = Path(self.assets_dir, name)
+        if not asset_path.relative_to(self.assets_dir):
+            raise ValueError("Path traversal attempt detected.")
+        return asset_path
+    
+    @property
+    def pgm_dir(self) -> Path:
+        return Path(self.sign_dir, "pgms")
+
+    def list_pgms(self) -> List[Path]:
+        out = []
+
+        for f in self.pgm_dir.glob("*.pgm"):
+            out.append(f)
+
+        return out
+
+    def get_pgm(self, name: str) -> Path:
+        if name.startswith("."):
+            raise ValueError("PGM can not start with a '.' character.")
+        if not name.endswith(".pgm"):
+            raise ValueError("PGM must end with '.pgm'.")
+        pgm_path = Path(self.pgm_dir, name)
+        if not pgm_path.relative_to(self.pgm_dir):
+            raise ValueError("Path traversal attempt detected.")
+        
+        return pgm_path

@@ -14,15 +14,16 @@
 <body>
     <canvas id='application'></canvas>
     <script type="module">
-        import {init, pushFrame} from './static/js/sim.js';
-
+        import {init, loadSign, pushFrame} from './static/js/sim.js';
         import {PlayPGM} from './static/js/pgm.js';
+
         // create a PlayCanvas application
         const canvas = document.getElementById('application');
         init(canvas);        
+        loadSign("uka17");
 
 
-        PlayPGM("./static/uka17/pgms/IntroAurora.pgm", pushFrame);
+        PlayPGM("./api/signs/uka17/pgms/IntroAurora.pgm", pushFrame);
     </script>
 </body>
 </html>
