@@ -13,7 +13,7 @@ export function init(canvas) {
     globalThis.pc = pc; // export pc such that scripts work. Not sure if this is the best way
 
     // fill the available space at full resolution
-    app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+    // app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
 
     let miniStats = new pcx.MiniStats(app);

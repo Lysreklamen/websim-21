@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <title>UKA21 WebSim</title>
     <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
+    <link href="static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="static/css/control.css" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -12,7 +14,33 @@
     </style>
 </head>
 <body>
-    <canvas id='application'></canvas>
+    <div class="container-fluid">
+        <div class="row">
+          <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+
+            <div class="position-sticky pt-3">
+                <h2 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Play PGM</span>
+                </h2>
+                <div class="justify-content-between align-items-center px-3 mt-4 mb-1">
+                    <button type="button" class="btn btn-outline-dark" style="width: 100%; height: 4em;">Click or drag!</button>
+                </div>
+
+                <h4 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Sequences</span>
+                </h4>
+              <ul id="pgm-sequences" class="nav flex-column">                
+              </ul>
+            </div>
+          </nav>
+      
+          <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <canvas id='application' style="width: 100%; height: 100%;"></canvas>
+          </main>
+        </div>
+      </div>
+
+    
     <script type="module">
         import {init, loadSign, pushFrame} from './static/js/sim.js';
         import {PlayPGM} from './static/js/pgm.js';
@@ -22,8 +50,28 @@
         init(canvas);        
         loadSign("uka17");
 
+        function htmlToElement(html) {
+            var template = document.createElement('template');
+            html = html.trim(); // Never return a text node of whitespace as the result
+            template.innerHTML = html;
+            return template.content.firstChild;
+        }
 
-        PlayPGM("./api/signs/uka17/pgms/IntroAurora.pgm", pushFrame);
+        fetch("./api/signs/uka17/pgms.json").then(response => response.json()).then(data => {
+            const elem_sequences = document.getElementById("pgm-sequences");
+            elem_sequences.innerHTML = "";
+            
+            for (const pgm_path of data) {
+                const elem = htmlToElement('<li class="nav-item"><a class="nav-link pgmplay" href="#">'+pgm_path+'</a></li>');
+                elem.addEventListener('click', event => {
+                    event.preventDefault();
+                    PlayPGM("./api/signs/uka17/pgms/"+pgm_path, pushFrame);
+                });
+                elem_sequences.appendChild(elem);
+            }
+
+        });
+
     </script>
 </body>
 </html>
