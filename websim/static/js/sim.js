@@ -1,5 +1,6 @@
 import * as pc from './playcanvas.js'
 import * as pcx from './extras/index.js'
+import {earcut} from './earcut.js';
 
 let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
@@ -41,7 +42,7 @@ export function init(canvas) {
 
 
     // create directional light entity
-    const light = new pc.Entity('light');
+    const light = new pc.Entity('globalLight');
     light.addComponent('light', {
         intensity: 0.3,
     });
@@ -120,11 +121,87 @@ export function loadSign(sign_name) {
             
             }
             
-
+            const camera = app.root.findByName("camera");
+            const globalLight = app.root.findByName("globalLight");
             for (const [group_index, j_group] of data['groups'].entries()) {
                 const group = new pc.Entity("group_"+group_index);
                 group.translate(j_group.pos[0], j_group.pos[1], 0.01);
 
+                const group_layer = new pc.Layer({name: "group_"+group_index})
+                app.scene.layers.pushOpaque(group_layer);
+                camera.camera.layers = camera.camera.layers.concat([group_layer.id]);
+                // camera.camera.update();
+
+                // Handle aluminium if any
+                if (j_group.alu !== undefined) {
+                    const j_alu = j_group.alu;
+
+                    // Flatten all the vertices
+                    // then run earcut to triangulate the polygon
+                    const vertices_2d = [];
+                    for (const p of j_alu.outline) {
+                        vertices_2d.push(p[0], p[1])
+                    }
+                    const holes_index_ranges = [];
+                    for (const hole of j_alu.holes) {
+                        const start = vertices_2d.length/2;
+                        for (const p of hole) {
+                            vertices_2d.push(p[0], p[1])
+                        }
+                        holes_index_ranges.push(start);
+                    }    
+                    
+                    const indices = earcut(vertices_2d, holes_index_ranges, 2);
+
+                    // Convert to 2d vertices (not sure if needed)
+                    const vertices = [];
+                    for (let i = 0; i <= vertices_2d.length; i+=2) {
+                        vertices.push(vertices_2d[i], vertices_2d[i+1], 0.0);
+                    }
+                    
+
+                    const normals = [];
+                    for (let i = 0; i <= vertices.length/3; i++) {
+                        normals.push(0.0, 0.0, 1.0);
+                    }
+
+                    // Create a new mesh
+                    const mesh = new pc.Mesh(app.graphicsDevice);
+                    mesh.setPositions(vertices); // only x and y positions
+                    mesh.setIndices(indices);
+                    // mesh.setUvs(0, uvs);
+                    // mesh.setColors(colors);
+                    mesh.setNormals(normals);
+                    mesh.update();
+
+                    // Create the material
+                    const material = new pc.StandardMaterial();
+                    material.diffuse.set(1.0, 1.0, 1.0);
+                    // material.specular.set(0.9, 0.9, 0.9);
+                    material.update();
+                    
+                    // Create the mesh instance
+                    var node = new pc.GraphNode();
+                    const meshInstance = new pc.MeshInstance(mesh, material, node);
+
+                    // Create a model and add the mesh instance to it
+                    var model = new pc.Model();
+                    model.graph = node;
+                    model.meshInstances = [meshInstance];
+
+                    // Create the entity
+                    const alu_entity = new pc.Entity("alu_"+group_index);
+                    alu_entity.addComponent('model', {
+                        type: 'asset',
+                        layers: [group_layer.id]
+                    });
+                    alu_entity.model.model = model;
+
+
+                    group.addChild(alu_entity);
+                }
+
+                // Handle bulbs
                 for(const j_bulb of j_group["bulbs"]) {
                     const bulb_id = j_bulb[0];
                     const bulb_pos = [j_bulb[1], j_bulb[2]];
@@ -134,10 +211,10 @@ export function loadSign(sign_name) {
                     bulbs.push(bulb);
 
                     bulb.addComponent('model', {
-                        type: 'sphere'
+                        type: 'sphere',
                     });
                     bulb.setLocalScale(0.05, 0.05, 0.05); // scale to 5cm diameter
-                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.03);
+                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.05);
 
                     bulb.model.material = new pc.BasicMaterial();
                     bulb.model.material.color.set(0.2, 0.2, 0.2);
@@ -147,9 +224,11 @@ export function loadSign(sign_name) {
                         type: "point",
                         color: new pc.Color(0.1, 0.1, 0.1),
                         intensity: 1,
-                        range: 0.4
+                        range: 0.4,
+                        layers: [group_layer.id]
                     });
-                    
+                    globalLight.light.layers = globalLight.light.layers.concat(group_layer.id)
+
                     bulb.channels = bulb_channels;
                 }
 

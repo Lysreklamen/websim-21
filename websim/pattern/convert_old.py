@@ -95,7 +95,9 @@ class Parser:
         return True
 
     def _parse_alu(self, line: str) -> bool:
-        points = []
+        polygon_def = [] # first element will be list of points for the outline, the next ones will be holes in the polygon
+        points = []  # list of points containing the current outline or hole being worked on
+
         point_defs = line.lstrip("ALU ").split(";")
         for point_index, point_def in enumerate(point_defs):
             point_def = point_def.strip()
@@ -106,8 +108,8 @@ class Parser:
                 # Defines the start of a new alu sub region
                 if len(points) < 3:
                     logger.error(f"ALU definition contains less than 3 points. \"{line}\"")
-                # Start over
-                self.polygons.append(Polygon(points))
+                # Append to the point definition and start over
+                polygon_def.append(points)
                 points = []
                 continue               
 
@@ -115,13 +117,18 @@ class Parser:
             if not match:
                 logger.error(f"Malformed ALU definition \"{line}\"\nOffending point definition was #{point_index}: \"{point_def}\"")
                 return False
-            points.append(Point(float(match.group(1)), -float(match.group(2)))) # Invert the axis such that up is positive
+            points.append((float(match.group(1)), -float(match.group(2)))) # Invert the axis such that up is positive
 
         if len(points) < 3:
             logger.error(f"ALU definition contains less than 3 points. \"{line}\"")
         
-        self.polygons.append(Polygon(points))
+        polygon_def.append(points)
 
+        if len(polygon_def) == 1:
+            self.polygons.append(Polygon(polygon_def[0]))
+        else:
+            # Also include the holes
+            self.polygons.append(Polygon(polygon_def[0], polygon_def[1:]))
         return True
 
     def _parse_background(self, line: str) -> bool:
@@ -176,7 +183,7 @@ class NewFormat:
         if self.background:
             bg = out["background"] = OrderedDict()
             bg["size"] = FlattenedList(round(self.background.size.x, 4), round(self.background.size.y, 4))
-            bg["texture"] = self.background.texture
+            bg["texture"] = "background.png"  # ignore the actual value and always call it background.png
 
         out["groups"] = []
         out["groups"].append(self._generate_floating_bulb_group())
@@ -211,7 +218,11 @@ class NewFormat:
         y = bounds[1]  # minY
         out["pos"] = FlattenedList(x, y)
 
-        out_alu = out["alu"] = [FlattenedList(round(p[0]-x, 4), round(p[1]-y,4)) for p in group.polygon.exterior.coords]
+        out_alu = out["alu"] = OrderedDict()
+        out_alu["outline"] = [FlattenedList(round(p[0]-x, 4), round(p[1]-y,4)) for p in group.polygon.exterior.coords]
+        out_alu_holes = out_alu["holes"] = []
+        for hole in group.polygon.interiors:
+            out_alu_holes.append([FlattenedList(round(p[0]-x, 4), round(p[1]-y,4)) for p in hole.coords])
 
         out_bulbs = out["bulbs"] = []
         for bulb in group.bulbs:
