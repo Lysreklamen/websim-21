@@ -159,25 +159,28 @@ export function loadSign(sign_name) {
                         vertices.push(vertices_2d[i], vertices_2d[i+1], 0.0);
                     }
                     
-
                     const normals = [];
                     for (let i = 0; i <= vertices.length/3; i++) {
                         normals.push(0.0, 0.0, 1.0);
+                    }
+
+                    const colors = [];
+                    for (let i = 0; i <= vertices.length/3; i++) {
+                        colors.push(1.0, 1.0, 1.0, 1.0); // rgba
                     }
 
                     // Create a new mesh
                     const mesh = new pc.Mesh(app.graphicsDevice);
                     mesh.setPositions(vertices); // only x and y positions
                     mesh.setIndices(indices);
-                    // mesh.setUvs(0, uvs);
-                    // mesh.setColors(colors);
+                    mesh.setColors(colors);
                     mesh.setNormals(normals);
                     mesh.update();
 
                     // Create the material
+                    // const material = new pc.BasicMaterial();
                     const material = new pc.StandardMaterial();
-                    material.diffuse.set(1.0, 1.0, 1.0);
-                    // material.specular.set(0.9, 0.9, 0.9);
+                    material.diffuseVertexColor = true;
                     material.update();
                     
                     // Create the mesh instance
