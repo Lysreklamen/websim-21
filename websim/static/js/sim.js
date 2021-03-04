@@ -155,6 +155,7 @@ export function loadSign(sign_name) {
 
                     // Convert to 2d vertices (not sure if needed)
                     const vertices = [];
+                    const vertex_count = vertices_2d.length/2;
                     for (let i = 0; i <= vertices_2d.length; i+=2) {
                         vertices.push(vertices_2d[i], vertices_2d[i+1], 0.0);
                     }
@@ -166,7 +167,65 @@ export function loadSign(sign_name) {
 
                     const colors = [];
                     for (let i = 0; i <= vertices.length/3; i++) {
-                        colors.push(1.0, 1.0, 1.0, 1.0); // rgba
+                        colors.push(1.0, 1.0, 1.0, 0.0); // rgba
+                        // 
+                    }
+
+                    // Create the outline ALU perimeter
+                    let alu_points = j_alu.outline;
+                    for (let i = 0; i < alu_points.length; i++) {
+                        // We need the previous, current and next vertex in the polygon to generate the normals 
+                        const is_last = i == (alu_points.length - 1);
+                        const p_cur = alu_points[i];
+                        const p_next = is_last ? alu_points[0] : alu_points[i+1];
+
+                        // Create the a two triangles (ct = current top, cb = current bottom, nt = next top, nb = next bottom)
+                        // cb ---- nb
+                        // |      / |
+                        // |    /   |
+                        // |  /     |
+                        // | /      |
+                        // ct ---- nt
+                        
+                        const index_start = vertices.length/3;
+                        vertices.push(p_cur[0], p_cur[1], 0); // cb
+                        vertices.push(p_cur[0], p_cur[1], 0.15); // ct
+                        vertices.push(p_next[0], p_next[1], 0); // nb
+                        vertices.push(p_next[0], p_next[1], 0.15); // nt
+
+                        // Push the color for the two vertices we created
+                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
+
+                        // Calculate the normals
+                        const dx = p_next[0] - p_cur[0]
+                        const dy = p_next[1] - p_cur[1]
+                        const dxy_len = Math.sqrt(dx*dx + dy*dy);
+                        const norm_x = dx/dxy_len;
+                        const norm_y = dy/dxy_len;
+                        // normals.push(-norm_y, norm_x, 0.0);
+                        // normals.push(-norm_y, norm_x, 0.0);
+                        // normals.push(-norm_y, norm_x, 0.0);
+                        // normals.push(-norm_y, norm_x, 0.0);
+                        // normals.push(norm_y, -norm_x, 0.0);
+                        // normals.push(norm_y, -norm_x, 0.0);
+                        // normals.push(norm_y, -norm_x, 0.0);
+                        // normals.push(norm_y, -norm_x, 0.0);
+                        normals.push(0.0, 0.0, 1.0)
+                        normals.push(0.0, 0.0, 1.0)
+                        normals.push(0.0, 0.0, 1.0)
+                        normals.push(0.0, 0.0, 1.0)
+                        
+
+                        const ct = index_start;
+                        const cb = index_start + 1;
+                        const nt = index_start + 2;
+                        const nb = index_start + 3;
+
+                        indices.push(cb, nb, ct);
+                        indices.push(ct, nb, nt);
                     }
 
                     // Create a new mesh
@@ -181,6 +240,10 @@ export function loadSign(sign_name) {
                     // const material = new pc.BasicMaterial();
                     const material = new pc.StandardMaterial();
                     material.diffuseVertexColor = true;
+                    material.glossVertexColor = true;
+                    material.glossVertexColorChannel = 'a';
+                    material.metalnessVertexColor = true;
+                    material.metalnessVertexColorChannel = 'a';
                     material.update();
                     
                     // Create the mesh instance
@@ -217,7 +280,7 @@ export function loadSign(sign_name) {
                         type: 'sphere',
                     });
                     bulb.setLocalScale(0.05, 0.05, 0.05); // scale to 5cm diameter
-                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.05);
+                    bulb.translate(bulb_pos[0], bulb_pos[1], 0.07);
 
                     bulb.model.material = new pc.BasicMaterial();
                     bulb.model.material.color.set(0.2, 0.2, 0.2);
@@ -226,7 +289,7 @@ export function loadSign(sign_name) {
                     bulb.addComponent('light', {
                         type: "point",
                         color: new pc.Color(0.1, 0.1, 0.1),
-                        intensity: 1,
+                        intensity: 1.0,
                         range: 0.4,
                         layers: [group_layer.id]
                     });
