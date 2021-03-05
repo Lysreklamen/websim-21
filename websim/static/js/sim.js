@@ -168,7 +168,6 @@ export function loadSign(sign_name) {
                     const colors = [];
                     for (let i = 0; i <= vertices.length/3; i++) {
                         colors.push(1.0, 1.0, 1.0, 0.0); // rgba
-                        // 
                     }
 
                     // Create the outline ALU perimeter
@@ -180,12 +179,12 @@ export function loadSign(sign_name) {
                         const p_next = is_last ? alu_points[0] : alu_points[i+1];
 
                         // Create the a two triangles (ct = current top, cb = current bottom, nt = next top, nb = next bottom)
-                        // cb ---- nb
-                        // |      / |
-                        // |    /   |
-                        // |  /     |
-                        // | /      |
-                        // ct ---- nt
+                        // cb -- nb
+                        // |    / |
+                        // |   /  |
+                        // |  /   |
+                        // | /    |
+                        // ct -- nt
                         
                         const index_start = vertices.length/3;
                         vertices.push(p_cur[0], p_cur[1], 0); // cb
@@ -194,43 +193,50 @@ export function loadSign(sign_name) {
                         vertices.push(p_next[0], p_next[1], 0.15); // nt
 
                         // Push the color for the two vertices we created
-                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
-                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
-                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
-                        colors.push(0.955, 0.960, 0.915, 0.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
+                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
 
                         // Calculate the normals
                         const dx = p_next[0] - p_cur[0]
                         const dy = p_next[1] - p_cur[1]
                         const dxy_len = Math.sqrt(dx*dx + dy*dy);
-                        const norm_x = dx/dxy_len;
-                        const norm_y = dy/dxy_len;
-                        // normals.push(-norm_y, norm_x, 0.0);
-                        // normals.push(-norm_y, norm_x, 0.0);
-                        // normals.push(-norm_y, norm_x, 0.0);
-                        // normals.push(-norm_y, norm_x, 0.0);
-                        // normals.push(norm_y, -norm_x, 0.0);
-                        // normals.push(norm_y, -norm_x, 0.0);
-                        // normals.push(norm_y, -norm_x, 0.0);
-                        // normals.push(norm_y, -norm_x, 0.0);
-                        normals.push(0.0, 0.0, 1.0)
-                        normals.push(0.0, 0.0, 1.0)
-                        normals.push(0.0, 0.0, 1.0)
-                        normals.push(0.0, 0.0, 1.0)
+                        const norm_dx = dx/dxy_len;
+                        const norm_dy = dy/dxy_len;
+                        const normal_candidates = [
+                            {x: -norm_dy, y: norm_dx},
+                            {x: norm_dy, y: -norm_dx}
+                        ];
+
+                        // Which normal should we use, use the one pointing inwards
+                        const dot_prod = normal_candidates[0].x * dx + normal_candidates[0].y * dy
+                        const normal = dot_prod > 0 ? normal_candidates[0] : normal_candidates[1];
+
+                        normals.push(normal.x, normal.y, 0.0);
+                        normals.push(normal.x, normal.y, 0.0);
+                        normals.push(normal.x, normal.y, 0.0);
+                        normals.push(normal.x, normal.y, 0.0);
+                        // normals.push(0.0, 0.0, 1.0);
+                        // normals.push(0.0, 0.0, 1.0);
+                        // normals.push(0.0, 0.0, 1.0);
+                        // normals.push(0.0, 0.0, 1.0);
                         
 
-                        const ct = index_start;
-                        const cb = index_start + 1;
-                        const nt = index_start + 2;
-                        const nb = index_start + 3;
+                        const cb = index_start;
+                        const ct = index_start + 1;
+                        const nb = index_start + 2;
+                        const nt = index_start + 3;
 
                         indices.push(cb, nb, ct);
                         indices.push(ct, nb, nt);
+                        indices.push(ct, nb, cb);
+                        indices.push(ct, nt, nb);
                     }
 
                     // Create a new mesh
                     const mesh = new pc.Mesh(app.graphicsDevice);
-                    mesh.setPositions(vertices); // only x and y positions
+                    mesh.setPositions(vertices);
                     mesh.setIndices(indices);
                     mesh.setColors(colors);
                     mesh.setNormals(normals);
@@ -240,10 +246,10 @@ export function loadSign(sign_name) {
                     // const material = new pc.BasicMaterial();
                     const material = new pc.StandardMaterial();
                     material.diffuseVertexColor = true;
-                    material.glossVertexColor = true;
-                    material.glossVertexColorChannel = 'a';
-                    material.metalnessVertexColor = true;
-                    material.metalnessVertexColorChannel = 'a';
+                    // material.glossVertexColor = true;
+                    // material.glossVertexColorChannel = 'a';
+                    // material.metalnessVertexColor = true;
+                    // material.metalnessVertexColorChannel = 'a';
                     material.update();
                     
                     // Create the mesh instance
