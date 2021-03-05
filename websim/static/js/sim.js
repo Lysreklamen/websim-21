@@ -86,6 +86,176 @@ export function reset() {
     active_frame_data = new Array(512).fill(0.5);
 }
 
+function create_plane_from_polygon(node, outline, holes) {
+    // Flatten all the vertices
+    // then run earcut to triangulate the polygon
+    const vertices_2d = [];
+    for (const p of outline) {
+        vertices_2d.push(p[0], p[1])
+    }
+    const holes_index_ranges = [];
+    for (const hole of holes) {
+        const start = vertices_2d.length/2;
+        for (const p of hole) {
+            vertices_2d.push(p[0], p[1])
+        }
+        holes_index_ranges.push(start);
+    }    
+    
+    const indices = earcut(vertices_2d, holes_index_ranges, 2);
+
+    // Convert to 2d vertices (not sure if needed)
+    const vertices = [];
+    for (let i = 0; i <= vertices_2d.length; i+=2) {
+        vertices.push(vertices_2d[i], vertices_2d[i+1], 0.0);
+    }
+    
+    const normals = [];
+    for (let i = 0; i <= vertices.length/3; i++) {
+        normals.push(0.0, 0.0, 1.0);
+    }
+
+    const colors = [];
+    for (let i = 0; i <= vertices.length/3; i++) {
+        colors.push(1.0, 1.0, 1.0, 0.0); // rgba
+    }
+
+    // Create a new mesh
+    const mesh = new pc.Mesh(app.graphicsDevice);
+    mesh.setPositions(vertices);
+    mesh.setIndices(indices);
+    mesh.setNormals(normals);
+    mesh.update();
+
+    // Create the material
+    // const material = new pc.BasicMaterial();
+    const material = new pc.StandardMaterial();
+    material.diffuse.set(1.0, 1.0, 1.0)
+    material.update();
+    
+    return new pc.MeshInstance(mesh, material, node);
+}
+
+function setVector(buffer, index, x, y, z) {
+    buffer[index+0] = x;
+    buffer[index+1] = y;
+    buffer[index+2] = z;
+}
+
+function setTriangle(buffer, baseIndex, triangles, reversed) {
+    for (let i = 0; i < 3; i++) {
+        buffer[baseIndex + i] = triangles[reversed ? 2 - i : i];
+    }
+}
+
+function getVector(buffer, baseIndex) {
+    return {
+        x: buffer[baseIndex + 0], 
+        y: buffer[baseIndex + 1], 
+        z: buffer[baseIndex + 2]
+    };
+}
+
+function crossProduct(a, b) {
+    return {
+        x: a.y * b.z - a.z * b.y, 
+        y: a.z * b.x - a.x * b.z, 
+        z: a.x * b.y - a.y * b.x 
+    }
+}
+
+function getNormal(buffer, a, b, c) {
+    const va = getVector(buffer, a * 3)
+    const vb = getVector(buffer, b * 3)
+    const vc = getVector(buffer, c * 3)
+    const leftSide = {x: vb.x - va.x, y: vb.y-va.y, z: vb.z-va.z};
+    const rightSide = {x: vc.x - vb.x, y: vc.y-vb.y, z: vc.z-vb.z};
+
+    // Cross product
+    const cross = crossProduct(leftSide, rightSide);
+    
+    // Normalize the vector to have a magnitude of 1
+    const magnitude = Math.sqrt(cross.x*cross.x + cross.y*cross.y + cross.z*cross.z);
+    return {
+        x: cross.x/magnitude, 
+        y: cross.y/magnitude, 
+        z: cross.z/magnitude
+    }
+}
+
+function create_alu_from_polygon(node, perimeter) {
+    // Each perimeter entry creates four triangles (one quad facing in and one quad facing out),
+    // each with three vertices. Sadly, the vertices mostly cannot be shared between adjacent quads because
+    // the normal vectors are tied to the vertices. However, we do share vertices between the two
+    // triangles that make up a quad. Thus, two quads with four vertices each and three vector components per vertex
+    // make a total of 2 * 4 * 3 = 24 vector components per quad pair. The two quads contain two triangles each,
+    // which each need three indices for a total of 12 indices per quad pair. Each of the 8 vertices needs
+    // a normal vector, also with three components for a total of 24 per quad pair.
+
+
+    const quadCount = perimeter.length;
+    const vertexBuffer = new Float32Array(quadCount * 24);
+    const indexBuffer = new Int32Array(quadCount * 12);
+    const normalBuffer = new Float32Array(quadCount * 24);
+
+    for (let i = 0; i < quadCount; i++) {
+        const ni = (i + 1) % perimeter.length;
+        const currentPoint = {x: perimeter[i][0], y: perimeter[i][1]};
+        const nextPoint = {x: perimeter[ni][0], y: perimeter[ni][1]};
+        for (let j = 0; j < 2; j++) {
+            // First iteration is the front face, second iteration is the back face
+            // Vertices
+            const vertexBase = i * 24 + j * 12 // 12 vector components per face
+            setVector(vertexBuffer, vertexBase + 0, currentPoint.x, currentPoint.y, 0.0)     // Current inner perimeter vertex (close to wall)
+            setVector(vertexBuffer, vertexBase + 3, currentPoint.x, currentPoint.y, 0.15) // Current outer perimeter vertex (out from wall)
+            setVector(vertexBuffer, vertexBase + 6, nextPoint.x, nextPoint.y, 0.0)           // Next inner perimeter vertex
+            setVector(vertexBuffer, vertexBase + 9, nextPoint.x, nextPoint.y, 0.15)       // Next outer perimeter vertex
+
+            // Indices of the triangle corners, referencing the vertices
+            const vertexIndexBase = vertexBase / 3 // Each vertex consists of 3 components
+            const indexBase = vertexBase / 2 // 6 indices per face
+            const currentInner = vertexIndexBase + 0 // Index of current inner perimeter vertex
+            const currentOuter = vertexIndexBase + 1 // Index of current outer perimeter vertex
+            const nextInner = vertexIndexBase + 2    // Index of next inner perimeter vertex
+            const nextOuter = vertexIndexBase + 3    // Index of next outer perimeter vertex
+            const reversed = j == 1
+            setTriangle(indexBuffer, indexBase + 0, [currentInner, currentOuter, nextOuter], reversed)
+            setTriangle(indexBuffer, indexBase + 3, [currentInner, nextOuter, nextInner], reversed)
+
+            // Normal vectors
+            let normal = getNormal(vertexBuffer, currentInner, currentOuter, nextOuter)
+            if (reversed) {
+                normal = {
+                    x: -normal.x,
+                    y: -normal.y,
+                    z: -normal.z
+                }
+            }
+            for (let k = 0; k < 4; k++) {
+                setVector(normalBuffer, vertexBase + k * 3, normal.x, normal.y, normal.z)
+            }
+        }
+    }
+
+
+    // Create a new mesh
+    const mesh = new pc.Mesh(app.graphicsDevice);
+    mesh.setPositions(vertexBuffer);
+    mesh.setIndices(indexBuffer);
+    mesh.setNormals(normalBuffer);
+    mesh.update();
+
+    // Create the material
+    // const material = new pc.BasicMaterial();
+    const material = new pc.StandardMaterial();
+    material.diffuse.set(0.972, 0.960, 0.915) 
+    // material.emissive.set(0.1, 0.1, 0.1); 
+    material.metalness = 1
+    material.update();
+    
+    return new pc.MeshInstance(mesh, material, node);
+}
+
 export function loadSign(sign_name) {
     // Reset the scene first
     reset();
@@ -136,130 +306,19 @@ export function loadSign(sign_name) {
                 if (j_group.alu !== undefined) {
                     const j_alu = j_group.alu;
 
-                    // Flatten all the vertices
-                    // then run earcut to triangulate the polygon
-                    const vertices_2d = [];
-                    for (const p of j_alu.outline) {
-                        vertices_2d.push(p[0], p[1])
-                    }
-                    const holes_index_ranges = [];
+                    // Create the meshes for alu and back plate
+                    const node = new pc.GraphNode();
+
+                    const meshes = [create_plane_from_polygon(node, j_alu.outline, j_alu.holes)];
+                    meshes.push(create_alu_from_polygon(node, j_alu.outline));
                     for (const hole of j_alu.holes) {
-                        const start = vertices_2d.length/2;
-                        for (const p of hole) {
-                            vertices_2d.push(p[0], p[1])
-                        }
-                        holes_index_ranges.push(start);
-                    }    
-                    
-                    const indices = earcut(vertices_2d, holes_index_ranges, 2);
-
-                    // Convert to 2d vertices (not sure if needed)
-                    const vertices = [];
-                    const vertex_count = vertices_2d.length/2;
-                    for (let i = 0; i <= vertices_2d.length; i+=2) {
-                        vertices.push(vertices_2d[i], vertices_2d[i+1], 0.0);
+                        meshes.push(create_alu_from_polygon(node, hole));
                     }
-                    
-                    const normals = [];
-                    for (let i = 0; i <= vertices.length/3; i++) {
-                        normals.push(0.0, 0.0, 1.0);
-                    }
-
-                    const colors = [];
-                    for (let i = 0; i <= vertices.length/3; i++) {
-                        colors.push(1.0, 1.0, 1.0, 0.0); // rgba
-                    }
-
-                    // Create the outline ALU perimeter
-                    let alu_points = j_alu.outline;
-                    for (let i = 0; i < alu_points.length; i++) {
-                        // We need the previous, current and next vertex in the polygon to generate the normals 
-                        const is_last = i == (alu_points.length - 1);
-                        const p_cur = alu_points[i];
-                        const p_next = is_last ? alu_points[0] : alu_points[i+1];
-
-                        // Create the a two triangles (ct = current top, cb = current bottom, nt = next top, nb = next bottom)
-                        // cb -- nb
-                        // |    / |
-                        // |   /  |
-                        // |  /   |
-                        // | /    |
-                        // ct -- nt
-                        
-                        const index_start = vertices.length/3;
-                        vertices.push(p_cur[0], p_cur[1], 0); // cb
-                        vertices.push(p_cur[0], p_cur[1], 0.15); // ct
-                        vertices.push(p_next[0], p_next[1], 0); // nb
-                        vertices.push(p_next[0], p_next[1], 0.15); // nt
-
-                        // Push the color for the two vertices we created
-                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
-                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
-                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
-                        colors.push(0.955, 0.960, 0.915, 1.0); // silver
-
-                        // Calculate the normals
-                        const dx = p_next[0] - p_cur[0]
-                        const dy = p_next[1] - p_cur[1]
-                        const dxy_len = Math.sqrt(dx*dx + dy*dy);
-                        const norm_dx = dx/dxy_len;
-                        const norm_dy = dy/dxy_len;
-                        const normal_candidates = [
-                            {x: -norm_dy, y: norm_dx},
-                            {x: norm_dy, y: -norm_dx}
-                        ];
-
-                        // Which normal should we use, use the one pointing inwards
-                        const dot_prod = normal_candidates[0].x * dx + normal_candidates[0].y * dy
-                        const normal = dot_prod > 0 ? normal_candidates[0] : normal_candidates[1];
-
-                        normals.push(normal.x, normal.y, 0.0);
-                        normals.push(normal.x, normal.y, 0.0);
-                        normals.push(normal.x, normal.y, 0.0);
-                        normals.push(normal.x, normal.y, 0.0);
-                        // normals.push(0.0, 0.0, 1.0);
-                        // normals.push(0.0, 0.0, 1.0);
-                        // normals.push(0.0, 0.0, 1.0);
-                        // normals.push(0.0, 0.0, 1.0);
-                        
-
-                        const cb = index_start;
-                        const ct = index_start + 1;
-                        const nb = index_start + 2;
-                        const nt = index_start + 3;
-
-                        indices.push(cb, nb, ct);
-                        indices.push(ct, nb, nt);
-                        indices.push(ct, nb, cb);
-                        indices.push(ct, nt, nb);
-                    }
-
-                    // Create a new mesh
-                    const mesh = new pc.Mesh(app.graphicsDevice);
-                    mesh.setPositions(vertices);
-                    mesh.setIndices(indices);
-                    mesh.setColors(colors);
-                    mesh.setNormals(normals);
-                    mesh.update();
-
-                    // Create the material
-                    // const material = new pc.BasicMaterial();
-                    const material = new pc.StandardMaterial();
-                    material.diffuseVertexColor = true;
-                    // material.glossVertexColor = true;
-                    // material.glossVertexColorChannel = 'a';
-                    // material.metalnessVertexColor = true;
-                    // material.metalnessVertexColorChannel = 'a';
-                    material.update();
-                    
-                    // Create the mesh instance
-                    var node = new pc.GraphNode();
-                    const meshInstance = new pc.MeshInstance(mesh, material, node);
 
                     // Create a model and add the mesh instance to it
                     var model = new pc.Model();
                     model.graph = node;
-                    model.meshInstances = [meshInstance];
+                    model.meshInstances = meshes;
 
                     // Create the entity
                     const alu_entity = new pc.Entity("alu_"+group_index);

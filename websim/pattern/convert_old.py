@@ -124,6 +124,21 @@ class Parser:
         
         polygon_def.append(points)
 
+        # For each point list check if we find any duplicates after each other
+        for i, points in enumerate(polygon_def):
+            new_points = []
+            last_point = None
+            for p in points:
+                if p != last_point:
+                    new_points.append(p)
+                last_point = p
+
+            # Remove the last element if first and last is equal
+            if new_points[0] == new_points[-1]:
+                new_points = new_points[:-1]
+            
+            polygon_def[i] = new_points
+
         if len(polygon_def) == 1:
             self.polygons.append(Polygon(polygon_def[0]))
         else:
