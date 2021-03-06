@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>UKA21 WebSim</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
+    <link href="static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="static/css/control.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- <div id='application' style="width: 100%; height: 100%;"></div> -->
+
+    <script src="static/js/two.js"></script>
+    <script type="module">
+        import * as pg_helper from './static/js/polygon_helper.js';
+
+        // var type = /(canvas|webgl)/.test(url.type) ? url.type : 'svg';
+        var two = new Two({
+          type: Two.Types['canvas'],
+          fullscreen: true,
+          autostart: true
+        }).appendTo(document.body);
+
+        // Make the axis the same as in 3D
+        
+        two.scene._matrix.manual = true;
+        two.scene._matrix.translate(0, two.height).scale(1, -1);
+
+        const scaling = 400;
+        const linewidth = 2/scaling;
+
+        const scene = new Two.Group();
+        two.add(scene);
+        scene.translation.set(1000, 20);
+        scene.scale = 200;
+
+        function newArrow(x1, y1, x2, y2, size) {
+            var headlen = size;
+
+            var angle = Math.atan2(y2 - y1, x2 - x1);
+
+            var vertices = [
+
+                new Two.Anchor(x1, y1, undefined, undefined, undefined, undefined, Two.Commands.move),
+                new Two.Anchor(x2, y2, undefined, undefined, undefined, undefined, Two.Commands.line),
+                new Two.Anchor(
+                x2 - headlen * Math.cos(angle - Math.PI / 4),
+                y2 - headlen * Math.sin(angle - Math.PI / 4),
+                undefined, undefined, undefined, undefined, Two.Commands.line
+                ),
+
+                new Two.Anchor(x2, y2, undefined, undefined, undefined, undefined, Two.Commands.move),
+                new Two.Anchor(
+                x2 - headlen * Math.cos(angle + Math.PI / 4),
+                y2 - headlen * Math.sin(angle + Math.PI / 4),
+                undefined, undefined, undefined, undefined, Two.Commands.line
+                )
+
+            ];
+
+            var path = new Two.Path(vertices, false, false, true);
+            path.noFill();
+            path.cap = 'round';
+            path.join = 'round';
+
+            return path;
+        }
+
+        function renderPath(group, path, inside_color, outside_color) {
+            let perimeter = path.map(p => new pg_helper.Point2D(p[0], p[1]))
+            perimeter = pg_helper.orderClockwise(perimeter);
+
+            const lines = pg_helper.pathToLines(perimeter);
+            const normals_inside = pg_helper.linesToNormals(lines, false);
+            const normals_outside = pg_helper.linesToNormals(lines, true);
+            
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+
+                const g_l = newArrow(l.a.x, l.a.y, l.b.x, l.b.y, 0.02)
+                // const g_l = new Two.Line(l.a.x, l.a.y, l.b.x, l.b.y)
+                g_l.stroke = 'black'
+                g_l.linewidth = linewidth;
+                group.add(g_l);
+
+                const center = new pg_helper.Point2D(l.a.x+l.delta.x/2, l.a.y+l.delta.y/2)
+
+                const ni = normals_inside[i];
+                // const g_ni = new Two.Line(center.x, center.y, center.x+0.05, center.y+0.05);
+                const g_ni = new Two.Line(center.x, center.y, center.x+ni.x*0.02, center.y+ni.y*0.02);
+                g_ni.stroke = inside_color;
+                g_ni.linewidth = linewidth;
+                group.add(g_ni);
+
+                const no = normals_outside[i];
+                const g_no = new Two.Line(center.x, center.y, center.x+no.x*0.02, center.y+no.y*0.02);
+                g_no.stroke = outside_color;
+                g_no.linewidth = linewidth;
+                group.add(g_no);
+            }
+        }
+
+        fetch("api/signs/uka17/scene.json").then(resp => resp.json()).then(data => {
+            // two has convenience methods to create shapes.
+            for (const j_group of data.groups) {
+                if (j_group.alu === undefined) {
+                    continue;
+                }
+                let alu_def = j_group.alu;
+                let group = new Two.Group();
+                group.translation.set(j_group.pos[0], j_group.pos[1])
+                scene.add(group);
+
+                renderPath(group, j_group.alu.outline, 'red', 'blue');
+                for (const hole of j_group.alu.holes) {
+                    renderPath(group, hole, 'blue', 'red'); // invert the colors
+                }
+                
+            }
+            // Don't forget to tell two to render everything
+            // to the screen
+            two.update();
+        });
+
+        
+    </script>
+</body>
+</html>

@@ -192,6 +192,18 @@ function create_alu_from_polygon(node, perimeter) {
     // which each need three indices for a total of 12 indices per quad pair. Each of the 8 vertices needs
     // a normal vector, also with three components for a total of 24 per quad pair.
 
+    // Check if the perimiter is in the clockwise order
+    let sum_edges = 0;
+    for (let i = 0; i < perimeter.length; i++) {
+        const cp = perimeter[i];
+        const np = perimeter[(i+1)%perimeter.length];
+        sum_edges += (np[0]-cp[0])*(np[1]+cp[1]);
+    }
+
+    // Reverse it if it is not in the clockwise order
+    if (sum_edges < 0.0) {
+        perimeter = perimeter.reverse();
+    } 
 
     const quadCount = perimeter.length;
     const vertexBuffer = new Float32Array(quadCount * 24);

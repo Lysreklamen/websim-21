@@ -124,21 +124,6 @@ class Parser:
         
         polygon_def.append(points)
 
-        # For each point list check if we find any duplicates after each other
-        for i, points in enumerate(polygon_def):
-            new_points = []
-            last_point = None
-            for p in points:
-                if p != last_point:
-                    new_points.append(p)
-                last_point = p
-
-            # Remove the last element if first and last is equal
-            if new_points[0] == new_points[-1]:
-                new_points = new_points[:-1]
-            
-            polygon_def[i] = new_points
-
         if len(polygon_def) == 1:
             self.polygons.append(Polygon(polygon_def[0]))
         else:
@@ -225,6 +210,26 @@ class NewFormat:
         out["bulbs"] = [self._generate_bulb(b) for b in self.floating_bulbs]
         return out
 
+    def _normalize_path(self, path, base_x, base_y, ndigits=4):
+        """
+        Subtracts the base position from all the elements,
+        rounds them of to a fixed precision, and
+        removes duplicates
+        """
+        output = []
+        last_p_rounded = None
+        for p in path:
+            p_rounded = [round(p[0]-base_x, ndigits), round(p[1]-base_y, ndigits)]
+            if last_p_rounded == p_rounded:
+                continue
+            last_p_rounded = p_rounded
+            output.append(p_rounded)
+        
+        if output[0] == output[-1]:
+            output = output[:-1]
+
+        return output
+
     def _generate_group(self, group: Group) -> OrderedDict:
         out = OrderedDict()
         # Calculate the bounding box for the polygon and use that as reference for the bulbs
@@ -234,10 +239,10 @@ class NewFormat:
         out["pos"] = FlattenedList(x, y)
 
         out_alu = out["alu"] = OrderedDict()
-        out_alu["outline"] = [FlattenedList(round(p[0]-x, 4), round(p[1]-y,4)) for p in group.polygon.exterior.coords]
+        out_alu["outline"] = [FlattenedList(*p) for p in self._normalize_path(group.polygon.exterior.coords, x, y)]
         out_alu_holes = out_alu["holes"] = []
         for hole in group.polygon.interiors:
-            out_alu_holes.append([FlattenedList(round(p[0]-x, 4), round(p[1]-y,4)) for p in hole.coords])
+            out_alu_holes.append([FlattenedList(*p) for p in self._normalize_path(hole.coords, x, y)])
 
         out_bulbs = out["bulbs"] = []
         for bulb in group.bulbs:

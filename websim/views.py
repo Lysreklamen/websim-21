@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 def index():
     return render_template("test.html")
 
+@app.route("/sign_debug")
+def sign_debug():
+    return render_template("sign_debug.html")
+
 
 #########################################################
 # The API endpoints are designed such that it would be
