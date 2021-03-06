@@ -1,6 +1,7 @@
 import * as pc from './playcanvas.js'
 import * as pcx from './extras/index.js'
 import {earcut} from './earcut.js';
+import * as pg_helper from './polygon_helper.js'
 
 let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
@@ -136,129 +137,77 @@ function create_plane_from_polygon(node, outline, holes) {
     return new pc.MeshInstance(mesh, material, node);
 }
 
-function setVector(buffer, index, x, y, z) {
-    buffer[index+0] = x;
-    buffer[index+1] = y;
-    buffer[index+2] = z;
-}
+function create_alu_mesh_from_path(node, path, outside) {
+    const height = 0.15;
 
-function setTriangle(buffer, baseIndex, triangles, reversed) {
-    for (let i = 0; i < 3; i++) {
-        buffer[baseIndex + i] = triangles[reversed ? 2 - i : i];
-    }
-}
+    let perimeter = path.map(p => new pg_helper.Point2D(p[0], p[1]))
+    perimeter = pg_helper.orderClockwise(perimeter);
 
-function getVector(buffer, baseIndex) {
-    return {
-        x: buffer[baseIndex + 0], 
-        y: buffer[baseIndex + 1], 
-        z: buffer[baseIndex + 2]
-    };
-}
+    const lines_2d = pg_helper.pathToLines(perimeter);
+    const normals_2d = pg_helper.linesToNormals(lines_2d, outside);
 
-function crossProduct(a, b) {
-    return {
-        x: a.y * b.z - a.z * b.y, 
-        y: a.z * b.x - a.x * b.z, 
-        z: a.x * b.y - a.y * b.x 
-    }
-}
-
-function getNormal(buffer, a, b, c) {
-    const va = getVector(buffer, a * 3)
-    const vb = getVector(buffer, b * 3)
-    const vc = getVector(buffer, c * 3)
-    const leftSide = {x: vb.x - va.x, y: vb.y-va.y, z: vb.z-va.z};
-    const rightSide = {x: vc.x - vb.x, y: vc.y-vb.y, z: vc.z-vb.z};
-
-    // Cross product
-    const cross = crossProduct(leftSide, rightSide);
+    const vertices = [];
+    const normals = [];
+    const triangles = [];
     
-    // Normalize the vector to have a magnitude of 1
-    const magnitude = Math.sqrt(cross.x*cross.x + cross.y*cross.y + cross.z*cross.z);
-    return {
-        x: cross.x/magnitude, 
-        y: cross.y/magnitude, 
-        z: cross.z/magnitude
-    }
-}
+    for (let i = 0; i < lines_2d.length; i++) {
+        const l = lines_2d[i];
+        const normal = normals_2d[i];
 
-function create_alu_from_polygon(node, perimeter) {
-    // Each perimeter entry creates four triangles (one quad facing in and one quad facing out),
-    // each with three vertices. Sadly, the vertices mostly cannot be shared between adjacent quads because
-    // the normal vectors are tied to the vertices. However, we do share vertices between the two
-    // triangles that make up a quad. Thus, two quads with four vertices each and three vector components per vertex
-    // make a total of 2 * 4 * 3 = 24 vector components per quad pair. The two quads contain two triangles each,
-    // which each need three indices for a total of 12 indices per quad pair. Each of the 8 vertices needs
-    // a normal vector, also with three components for a total of 24 per quad pair.
 
-    // Check if the perimiter is in the clockwise order
-    let sum_edges = 0;
-    for (let i = 0; i < perimeter.length; i++) {
-        const cp = perimeter[i];
-        const np = perimeter[(i+1)%perimeter.length];
-        sum_edges += (np[0]-cp[0])*(np[1]+cp[1]);
-    }
+        /*
+        Each line segment will be created using a single square face.
+        The square is made out of two triangles and 4 vertices.
+        All the vertices will share the same normal
 
-    // Reverse it if it is not in the clockwise order
-    if (sum_edges < 0.0) {
-        perimeter = perimeter.reverse();
-    } 
+        vertex names
+        ab = a - bottom
+        at = a - top
+        bb = b - bottom
+        bt = b - top
 
-    const quadCount = perimeter.length;
-    const vertexBuffer = new Float32Array(quadCount * 24);
-    const indexBuffer = new Int32Array(quadCount * 12);
-    const normalBuffer = new Float32Array(quadCount * 24);
+        ab -- at
+        |    / |
+        |   /  |
+        | /    |
+        bb -- bt
+        */
+        
+        const index_ab = vertices.length/3;
+        const index_at = index_ab+1;
+        const index_bb = index_at+1;
+        const index_bt = index_bb+1;
 
-    for (let i = 0; i < quadCount; i++) {
-        const ni = (i + 1) % perimeter.length;
-        const currentPoint = {x: perimeter[i][0], y: perimeter[i][1]};
-        const nextPoint = {x: perimeter[ni][0], y: perimeter[ni][1]};
-        for (let j = 0; j < 2; j++) {
-            // First iteration is the front face, second iteration is the back face
-            // Vertices
-            const vertexBase = i * 24 + j * 12 // 12 vector components per face
-            setVector(vertexBuffer, vertexBase + 0, currentPoint.x, currentPoint.y, 0.0)     // Current inner perimeter vertex (close to wall)
-            setVector(vertexBuffer, vertexBase + 3, currentPoint.x, currentPoint.y, 0.15) // Current outer perimeter vertex (out from wall)
-            setVector(vertexBuffer, vertexBase + 6, nextPoint.x, nextPoint.y, 0.0)           // Next inner perimeter vertex
-            setVector(vertexBuffer, vertexBase + 9, nextPoint.x, nextPoint.y, 0.15)       // Next outer perimeter vertex
+        vertices.push(l.a.x, l.a.y, 0.0); // ab
+        vertices.push(l.a.x, l.a.y, height); // at
+        vertices.push(l.b.x, l.b.y, 0.0); // bb
+        vertices.push(l.b.x, l.b.y, height); // bt
 
-            // Indices of the triangle corners, referencing the vertices
-            const vertexIndexBase = vertexBase / 3 // Each vertex consists of 3 components
-            const indexBase = vertexBase / 2 // 6 indices per face
-            const currentInner = vertexIndexBase + 0 // Index of current inner perimeter vertex
-            const currentOuter = vertexIndexBase + 1 // Index of current outer perimeter vertex
-            const nextInner = vertexIndexBase + 2    // Index of next inner perimeter vertex
-            const nextOuter = vertexIndexBase + 3    // Index of next outer perimeter vertex
-            const reversed = j == 1
-            setTriangle(indexBuffer, indexBase + 0, [currentInner, currentOuter, nextOuter], reversed)
-            setTriangle(indexBuffer, indexBase + 3, [currentInner, nextOuter, nextInner], reversed)
+        normals.push(normal.x, normal.y, 0.0); 
+        normals.push(normal.x, normal.y, 0.0); 
+        normals.push(normal.x, normal.y, 0.0); 
+        normals.push(normal.x, normal.y, 0.0); 
 
-            // Normal vectors
-            let normal = getNormal(vertexBuffer, currentInner, currentOuter, nextOuter)
-            if (reversed) {
-                normal = {
-                    x: -normal.x,
-                    y: -normal.y,
-                    z: -normal.z
-                }
-            }
-            for (let k = 0; k < 4; k++) {
-                setVector(normalBuffer, vertexBase + k * 3, normal.x, normal.y, normal.z)
-            }
-        }
+        if (outside) {
+            // triangle ab - at - bb
+            triangles.push(index_ab, index_at, index_bb);
+            // triangle bb - at - bt
+            triangles.push(index_bb, index_at, index_bt);
+        } else {
+            // triangle bb - at - ab
+            triangles.push(index_bb, index_at, index_ab);
+            // triangle bt - at - bb
+            triangles.push(index_bt, index_at, index_bb);
+        }        
     }
 
-
-    // Create a new mesh
     const mesh = new pc.Mesh(app.graphicsDevice);
-    mesh.setPositions(vertexBuffer);
-    mesh.setIndices(indexBuffer);
-    mesh.setNormals(normalBuffer);
+    mesh.setPositions(vertices);
+    mesh.setIndices(triangles);
+    mesh.setNormals(normals);
     mesh.update();
+    
 
-    // Create the material
-    // const material = new pc.BasicMaterial();
     const material = new pc.StandardMaterial();
     material.diffuse.set(0.972, 0.960, 0.915) 
     // material.emissive.set(0.1, 0.1, 0.1); 
@@ -319,29 +268,58 @@ export function loadSign(sign_name) {
                     const j_alu = j_group.alu;
 
                     // Create the meshes for alu and back plate
-                    const node = new pc.GraphNode();
+                    // We will create two models
+                    // - one for the back plate and inside facing aluminium (will receive lightt)
+                    // - one for the outside facing aluminium (will only receive global light)
 
-                    const meshes = [create_plane_from_polygon(node, j_alu.outline, j_alu.holes)];
-                    meshes.push(create_alu_from_polygon(node, j_alu.outline));
-                    for (const hole of j_alu.holes) {
-                        meshes.push(create_alu_from_polygon(node, hole));
+                    {
+                        // Inside alu and plane
+                        const node = new pc.GraphNode();
+                        const meshes = [create_plane_from_polygon(node, j_alu.outline, j_alu.holes)];
+                        meshes.push(create_alu_mesh_from_path(node, j_alu.outline, false));
+                        for (const hole of j_alu.holes) {
+                            meshes.push(create_alu_mesh_from_path(node, hole, true));
+                        }
+
+                        // Create a model and add the mesh instance to it
+                        var model = new pc.Model();
+                        model.graph = node;
+                        model.meshInstances = meshes;
+
+                        // Create the entity
+                        const alu_entity = new pc.Entity("alu_"+group_index+"_inside");
+                        alu_entity.addComponent('model', {
+                            type: 'asset',
+                            layers: [group_layer.id]
+                        });
+                        alu_entity.model.model = model;
+
+                        group.addChild(alu_entity);
+                    } 
+                    {
+                        // Outside facing alu
+                        const node = new pc.GraphNode();
+                        const meshes = [];
+                        meshes.push(create_alu_mesh_from_path(node, j_alu.outline, true));
+                        for (const hole of j_alu.holes) {
+                            meshes.push(create_alu_mesh_from_path(node, hole, false));
+                        }
+
+                        // Create a model and add the mesh instance to it
+                        var model = new pc.Model();
+                        model.graph = node;
+                        model.meshInstances = meshes;
+
+                        // Create the entity
+                        const alu_entity = new pc.Entity("alu_"+group_index+"_outside");
+                        alu_entity.addComponent('model', {
+                            type: 'asset',
+                        });
+                        alu_entity.model.model = model;
+
+                        group.addChild(alu_entity);
                     }
-
-                    // Create a model and add the mesh instance to it
-                    var model = new pc.Model();
-                    model.graph = node;
-                    model.meshInstances = meshes;
-
-                    // Create the entity
-                    const alu_entity = new pc.Entity("alu_"+group_index);
-                    alu_entity.addComponent('model', {
-                        type: 'asset',
-                        layers: [group_layer.id]
-                    });
-                    alu_entity.model.model = model;
-
-
-                    group.addChild(alu_entity);
+                    
                 }
 
                 // Handle bulbs
