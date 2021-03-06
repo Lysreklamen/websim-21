@@ -217,15 +217,13 @@ function create_alu_mesh_from_path(node, path, outside) {
     return new pc.MeshInstance(mesh, material, node);
 }
 
-export function loadSign(sign_name) {
+export function loadSign(api_base) {
     // Reset the scene first
     reset();
 
-    const base_url = "api/signs/"+sign_name+"/";
     const scene_root = app.root.findByName("scene_root");
 
-
-    fetch(base_url+"scene.json")
+    fetch(api_base+"/scene.json")
         .then(response => response.json())
         .then(data => {
             // create box entity
@@ -240,7 +238,7 @@ export function loadSign(sign_name) {
                 scene_root.addChild(sign_bg);
                 
 
-                app.loader.load(base_url+"assets/"+data.background.texture, "texture", function(err, texture){
+                app.loader.load(api_base+"/assets/"+data.background.texture, "texture", function(err, texture){
                     let material = new pc.StandardMaterial();
                     material.diffuseMap = texture;
                     material.opacityMap = texture;

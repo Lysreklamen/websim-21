@@ -11,7 +11,11 @@ logger = logging.getLogger(__name__)
 
 @app.route("/")
 def index():
-    return render_template("test.html")
+    return render_template("index.html")
+
+@app.route("/simulator")
+def simulator():
+    return render_template("simulator.html")
 
 @app.route("/sign_debug")
 def sign_debug():
