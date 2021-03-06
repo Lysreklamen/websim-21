@@ -48,7 +48,7 @@ export function init(canvas) {
         intensity: 0.3,
     });
     app.root.addChild(light);
-    light.setEulerAngles(45, 0, 0);
+    light.setEulerAngles(90+30, 0, 0); // global illumination 30 degrees from below (street lights?)
 
     app.on('update', dt => {
         for (const bulb of bulbs) {
@@ -131,7 +131,7 @@ function create_plane_from_polygon(node, outline, holes) {
     // Create the material
     // const material = new pc.BasicMaterial();
     const material = new pc.StandardMaterial();
-    material.diffuse.set(1.0, 1.0, 1.0)
+    material.diffuse.set(1.0, 1.0, 1.0);
     material.update();
     
     return new pc.MeshInstance(mesh, material, node);
@@ -210,7 +210,7 @@ function create_alu_mesh_from_path(node, path, outside) {
 
     const material = new pc.StandardMaterial();
     material.diffuse.set(0.972, 0.960, 0.915) 
-    // material.emissive.set(0.1, 0.1, 0.1); 
+    material.emissive.set(0.1, 0.1, 0.1);
     material.metalness = 1
     material.update();
     
