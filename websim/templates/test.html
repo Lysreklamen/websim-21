@@ -47,7 +47,7 @@
         // create a PlayCanvas application
         const canvas = document.getElementById('application');
         init(canvas);        
-        loadSign("uka17");
+        loadSign("uka19");
 
         function htmlToElement(html) {
             var template = document.createElement('template');
@@ -56,7 +56,7 @@
             return template.content.firstChild;
         }
 
-        fetch("./api/signs/uka17/pgms.json").then(response => response.json()).then(data => {
+        fetch("./api/signs/uka19/pgms.json").then(response => response.json()).then(data => {
             const elem_sequences = document.getElementById("pgm-sequences");
             elem_sequences.innerHTML = "";
             
@@ -64,7 +64,7 @@
                 const elem = htmlToElement('<li class="nav-item"><a class="nav-link pgmplay" href="#">'+pgm_path+'</a></li>');
                 elem.addEventListener('click', event => {
                     event.preventDefault();
-                    PlayPGM("./api/signs/uka17/pgms/"+pgm_path, pushFrame);
+                    PlayPGM("./api/signs/uka19/pgms/"+pgm_path, pushFrame);
                 });
                 elem_sequences.appendChild(elem);
             }
