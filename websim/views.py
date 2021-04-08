@@ -41,8 +41,13 @@ def api_sign_list():
         
         try:
             # If creating a sign object fails this is not a valid sign
-            Sign(f.name)
-            signs.append(f.name)
+            sign = Sign(f.name)
+            if sign.public:
+                signs.append(f.name)
+            else:
+                # TODO check if authenticated
+                pass
+            
         except ValueError:
             logger.warning(f"The directory signs/{f.name} could not be validated as a valid name. ", exc_info=True)
 

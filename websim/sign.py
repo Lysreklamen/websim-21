@@ -1,6 +1,7 @@
 
 from pathlib import Path
 import re
+import json
 from typing import List
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -19,6 +20,22 @@ class Sign:
             raise ValueError("Sign does not exist")
 
         self.sign_dir = sign_dir
+
+    def _get_meta(self):
+        meta_path = Path(self.sign_dir, "meta.json")
+        with meta_path.open('rb') as meta_f:
+            meta = json.load(meta_f)  # type: dict
+        
+        # Always set public to False if it does not exist or is not a boolean
+        if not isinstance(meta.get("public", None), bool):
+            meta["public"] = False
+        return meta
+    
+    @property
+    def public(self) -> bool:
+        meta = self._get_meta()
+        # Default to false if the key is not set AND enforce it to be a boolean True exactly
+        return meta.get("public", False) is True
 
     @property
     def scene_def(self) -> Path:
