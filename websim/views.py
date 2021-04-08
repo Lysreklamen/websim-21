@@ -1,17 +1,34 @@
 from .server import app
-from flask import render_template, jsonify, send_file
+from flask import render_template, jsonify, send_file, request, redirect
 from pathlib import Path
 import re
 import logging
+import jwt
 from functools import wraps
 
 from .sign import Sign, SIGNS_DIR
+from . import auth
 
 logger = logging.getLogger(__name__)
+
+def is_authenticated():
+    auth_token = request.cookies.get("access-token", "")
+    return auth.is_authenticated(auth_token)
 
 @app.route("/")
 def index():
     return render_template("index.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if auth.check_password(password):
+            resp = redirect("/")
+            resp.set_cookie("access-token", value=auth.generate_auth_token(), httponly=True, max_age=24*60*60)
+            return resp
+        return render_template("login.html", message="Wrong passwod!")
+    return render_template("login.html")
 
 @app.route("/simulator")
 def simulator():
@@ -34,10 +51,14 @@ def api_sign_list():
     """
     API for listing available signs.
     """
+    authenticated = is_authenticated()
+
     signs = []
     for f  in SIGNS_DIR.iterdir():
         if not f.is_dir():
-            pass
+            continue
+        if f.name.startswith('.'):
+            continue
         
         try:
             # If creating a sign object fails this is not a valid sign
@@ -45,8 +66,8 @@ def api_sign_list():
             if sign.public:
                 signs.append(f.name)
             else:
-                # TODO check if authenticated
-                pass
+                if authenticated:
+                    signs.append(f.name)
             
         except ValueError:
             logger.warning(f"The directory signs/{f.name} could not be validated as a valid name. ", exc_info=True)
@@ -68,6 +89,9 @@ def sign_api(f):
         try: 
             # The below verification should avoid any directory traversal bugs
             sign = Sign(sign_name)
+            if not sign.public and not is_authenticated():
+                logger.warn("User tried to access private sign")
+                raise ValueError("user tried to access private sign!")
         except ValueError:
             return "invalid sign name", 400
         return f(sign, *args, **kwargs)
