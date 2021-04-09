@@ -15,6 +15,12 @@ def is_authenticated():
     auth_token = request.cookies.get("access-token", "")
     return auth.is_authenticated(auth_token)
 
+@app.context_processor
+def inject_template_vars():
+    return {
+        "is_authenticated": is_authenticated()
+    }
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -29,6 +35,12 @@ def login():
             return resp
         return render_template("login.html", message="Wrong passwod!")
     return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    resp = redirect("/")
+    resp.delete_cookie("access-token")
+    return resp
 
 @app.route("/simulator")
 def simulator():
