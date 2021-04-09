@@ -62,12 +62,12 @@ def api_sign_list():
         
         try:
             # If creating a sign object fails this is not a valid sign
-            sign = Sign(f.name)
-            if sign.public:
+            try:
+                sign = Sign(f.name, authenticated=is_authenticated())
                 signs.append(f.name)
-            else:
-                if authenticated:
-                    signs.append(f.name)
+            except PermissionError:
+                # Sign is private and we are not authenticated
+                continue
             
         except ValueError:
             logger.warning(f"The directory signs/{f.name} could not be validated as a valid name. ", exc_info=True)
@@ -88,8 +88,9 @@ def sign_api(f):
         del kwargs['sign_name']
         try: 
             # The below verification should avoid any directory traversal bugs
-            sign = Sign(sign_name)
-            if not sign.public and not is_authenticated():
+            try:
+                sign = Sign(sign_name, authenticated=is_authenticated())
+            except PermissionError:
                 logger.warn("User tried to access private sign")
                 raise ValueError("user tried to access private sign!")
         except ValueError:

@@ -8,7 +8,7 @@ SCRIPT_DIR = Path(__file__).parent.absolute()
 SIGNS_DIR = Path(SCRIPT_DIR, "signs")
 
 class Sign:
-    def __init__(self, name: str):
+    def __init__(self, name: str, *, authenticated: bool = False):
         if not re.match("^[a-zA-Z0-9\-]+$", name):
             raise ValueError("Invalid sign name")
         
@@ -20,6 +20,9 @@ class Sign:
             raise ValueError("Sign does not exist")
 
         self.sign_dir = sign_dir
+
+        if not authenticated and not self.public:
+            raise PermissionError("Sign is private")
 
     def _get_meta(self):
         meta_path = Path(self.sign_dir, "meta.json")
