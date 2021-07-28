@@ -128,7 +128,27 @@ class Parser:
             self.polygons.append(Polygon(polygon_def[0]))
         else:
             # Also include the holes
-            self.polygons.append(Polygon(polygon_def[0], polygon_def[1:]))
+            # Figure out if one polygon contains all the others, this is the outline
+            for outline_index in range(len(polygon_def)):
+                outline = Polygon(polygon_def[outline_index])
+                
+                # Check if all the other polygons is inside this one
+                inside = True
+                holes = []
+                for i in range(len(polygon_def)):
+                    if i == outline_index:
+                        continue # This is the outline itself
+                    p = Polygon(polygon_def[i])
+                    if not outline.contains(p):
+                        inside = False
+                        break
+                    holes.append(polygon_def[i])
+                if not inside:
+                    continue
+                # all holes are inside this one
+                self.polygons.append(Polygon(polygon_def[outline_index], holes))
+                break
+
         return True
 
     def _parse_background(self, line: str) -> bool:
