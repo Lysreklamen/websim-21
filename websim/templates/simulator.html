@@ -21,17 +21,22 @@
         }
 
         #content {
-            padding-bottom: 10em;
+            padding-bottom: 16em;
             height: 100%;
             width: 100%;
         }
 
         footer {
             position: fixed;
-            height: 10em;
+            height: 16em;
             width: 100%;
             bottom: 0;
             line-height: 3rem;
+            overflow-y: auto;
+        }
+
+        .pgm-button {
+            margin: 0 0.1em;
         }
     </style>
 </head>
@@ -55,7 +60,9 @@
         </ul>
         <div class="tab-content">
             <div class="tab-pane fade show active" id="pgms">
-                PGM list here
+                <div id="pgm-sequences">
+                    
+                </div>
             </div>
             <div class="tab-pane fade" id="development">
                 WebSocket connection
@@ -92,20 +99,20 @@
                 return template.content.firstChild;
             }
 
-            // fetch(api_base + "/pgms.json").then(response => response.json()).then(data => {
-            //     const elem_sequences = document.getElementById("pgm-sequences");
-            //     elem_sequences.innerHTML = "";
+            fetch(api_base + "/pgms.json").then(response => response.json()).then(data => {
+                const elem_sequences = document.getElementById("pgm-sequences");
+                elem_sequences.innerHTML = "";
 
-            //     for (const pgm_path of data) {
-            //         const elem = htmlToElement('<li class="nav-item"><a class="nav-link pgmplay" href="#">' + pgm_path + '</a></li>');
-            //         elem.addEventListener('click', event => {
-            //             event.preventDefault();
-            //             PlayPGM(api_base + "/pgms/" + pgm_path, pushFrame);
-            //         });
-            //         elem_sequences.appendChild(elem);
-            //     }
+                for (const pgm_path of data) {
+                    const elem = htmlToElement('<button type="button" class="btn btn-outline-secondary pgm-button">' + pgm_path + '</button>');
+                    elem.addEventListener('click', event => {
+                        event.preventDefault();
+                        PlayPGM(api_base + "/pgms/" + pgm_path, pushFrame);
+                    });
+                    elem_sequences.appendChild(elem);
+                }
 
-            // });
+            });
         };
 
         startup();
