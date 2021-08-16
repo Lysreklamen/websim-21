@@ -8,44 +8,65 @@
         content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
     <link href="static/css/bootstrap.min.css" rel="stylesheet">
     <style>
-html, body { height:100%; }
-header { position:fixed; width:100%; top:0;padding:1rem 0; }
-#content { padding: 60px 0; height: 100%; width: 100%; }
-footer { position:fixed; width:100%; bottom:0; line-height:3rem; }
-header,
-footer,
-nav li {
-    background-color: #fff;    
-}
-nav li { display:inline; text-transform:uppercase; } 
-li { margin-right:2rem; }
+        html,
+        body {
+            height: 100%;
+        }
+
+        header {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            padding: 1rem 0;
+        }
+
+        #content {
+            padding-bottom: 10em;
+            height: 100%;
+            width: 100%;
+        }
+
+        footer {
+            position: fixed;
+            height: 10em;
+            width: 100%;
+            bottom: 0;
+            line-height: 3rem;
+        }
     </style>
 </head>
 
 <body>
-    <header>
-        <nav>
-            <ul id="menu-main">
-                <li><a href="#">header1</a></li>
-                <li><a href="#">header2</a></li>
-                <li><a href="#">header3</a></li>
-            </ul>
-        </nav>
-    </header>
     <div id="content">
         <canvas id="application" style="height: 100%; width: 100%;"></canvas>
     </div>
     <footer>
-        <nav>
-            <ul id="menu-footer">
-                <li><a href="#">footer1</a></li>
-                <li><a href="#">footer2</a></li>
-                <li><a href="#">footer3</a></li>
-            </ul>
-        </nav>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pgms" type="button">PGMs</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#development"
+                    type="button">Development</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#contact" type="button">Contact</button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="pgms">
+                PGM list here
+            </div>
+            <div class="tab-pane fade" id="development">
+                WebSocket connection
+            </div>
+            <div class="tab-pane fade" id="contact">
+                Test123
+            </div>
+        </div>
     </footer>
 
-
+    <script src="static/js/bootstrap.js"></script>
     <script type="module">
         import { init, loadSign, pushFrame } from './static/js/sim.js';
         import { PlayPGM } from './static/js/pgm.js';
