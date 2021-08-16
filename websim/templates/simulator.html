@@ -1,61 +1,95 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>UKA21 WebSim</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
+    <meta name='viewport'
+        content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
     <link href="static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="static/css/control.css" rel="stylesheet">
     <style>
+        html,
         body {
-            margin: 0;
-            overflow: hidden;
+            height: 100%;
+        }
+
+        header {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            padding: 1rem 0;
+        }
+
+        #content {
+            padding-bottom: 16em;
+            height: 100%;
+            width: 100%;
+        }
+
+        footer {
+            position: fixed;
+            height: 16em;
+            width: 100%;
+            bottom: 0;
+            line-height: 3rem;
+            overflow-y: auto;
+        }
+
+        .pgm-button {
+            margin: 0 0.1em;
         }
     </style>
 </head>
+
 <body>
-    <div class="container-fluid">
-        <div class="row">
-          <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar overflow-auto collapse">
-
-            <div class="position-sticky pt-3">
-                <h2 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <span>Play PGM</span>
-                </h2>
-                <div class="justify-content-between align-items-center px-3 mt-4 mb-1">
-                    <button type="button" class="btn btn-outline-dark" style="width: 100%; height: 4em;">Click or drag!</button>
+    <div id="content">
+        <canvas id="application" style="height: 100%; width: 100%;"></canvas>
+    </div>
+    <footer>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pgms" type="button">PGMs</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#development"
+                    type="button">Development</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#contact" type="button">Contact</button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="pgms">
+                <div id="pgm-sequences">
+                    
                 </div>
-
-                <h4 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                    <span>Sequences</span>
-                </h4>
-              <ul id="pgm-sequences" class="nav flex-column">                
-              </ul>
             </div>
-          </nav>
-      
-          <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            <canvas id='application' style="width: 100%; height: 100%;"></canvas>
-          </main>
+            <div class="tab-pane fade" id="development">
+                WebSocket connection
+            </div>
+            <div class="tab-pane fade" id="contact">
+                Test123
+            </div>
         </div>
-      </div>
+    </footer>
 
+    <script src="static/js/bootstrap.js"></script>
     <script type="module">
-        import {init, loadSign, pushFrame} from './static/js/sim.js';
-        import {PlayPGM} from './static/js/pgm.js';
+        import { init, loadSign, pushFrame } from './static/js/sim.js';
+        import { PlayPGM } from './static/js/pgm.js';
 
-        function startup(){
+        function startup() {
             const url = new URL(window.location.href)
             const sign_name = url.searchParams.get("sign");
             if (sign_name == null) {
                 alert("Sign name not provided!")
                 return;
             }
-            const api_base = "api/signs/"+sign_name;
+            const api_base = "api/signs/" + sign_name;
 
             // create a PlayCanvas application
             const canvas = document.getElementById('application');
-            init(canvas);        
+            init(canvas);
             loadSign(api_base);
 
             function htmlToElement(html) {
@@ -65,15 +99,15 @@
                 return template.content.firstChild;
             }
 
-            fetch(api_base+"/pgms.json").then(response => response.json()).then(data => {
+            fetch(api_base + "/pgms.json").then(response => response.json()).then(data => {
                 const elem_sequences = document.getElementById("pgm-sequences");
                 elem_sequences.innerHTML = "";
-                
+
                 for (const pgm_path of data) {
-                    const elem = htmlToElement('<li class="nav-item"><a class="nav-link pgmplay" href="#">'+pgm_path+'</a></li>');
+                    const elem = htmlToElement('<button type="button" class="btn btn-outline-secondary pgm-button">' + pgm_path + '</button>');
                     elem.addEventListener('click', event => {
                         event.preventDefault();
-                        PlayPGM(api_base+"/pgms/"+pgm_path, pushFrame);
+                        PlayPGM(api_base + "/pgms/" + pgm_path, pushFrame);
                     });
                     elem_sequences.appendChild(elem);
                 }
@@ -82,8 +116,9 @@
         };
 
         startup();
-        
+
 
     </script>
 </body>
+
 </html>
