@@ -217,7 +217,7 @@ function create_alu_mesh_from_path(node, path, outside) {
     return new pc.MeshInstance(mesh, material, node);
 }
 
-export function loadSign(api_base) {
+export function loadSign(api_base, bulbCallback) {
     // Reset the scene first
     reset();
 
@@ -252,6 +252,7 @@ export function loadSign(api_base) {
             
             const camera = app.root.findByName("camera");
             const globalLight = app.root.findByName("globalLight");
+            const bulbInfo = [];
             for (const [group_index, j_group] of data['groups'].entries()) {
                 const group = new pc.Entity("group_"+group_index);
                 group.translate(j_group.pos[0], j_group.pos[1], 0.01);
@@ -328,6 +329,10 @@ export function loadSign(api_base) {
                     const bulb = new pc.Entity("bulb_"+bulb_id);
                     group.addChild(bulb);
                     bulbs.push(bulb);
+                    bulbInfo.push({
+                        id: bulb_id,
+                        channels: bulb_channels,
+                    });
 
                     bulb.addComponent('model', {
                         type: 'sphere',
@@ -352,6 +357,16 @@ export function loadSign(api_base) {
                 }
 
                 scene_root.addChild(group);
+            }
+
+            bulbInfo.sort((a, b) => a.id - b.id);
+            for (const bulb of bulbInfo) {
+                bulbCallback({
+                    id: bulb.id,
+                    redChannel: bulb.channels[0],
+                    greenChannel: bulb.channels[1],
+                    blueChannel: bulb.channels[2],
+                });
             }
         });
 }
