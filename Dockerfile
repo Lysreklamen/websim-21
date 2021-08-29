@@ -6,5 +6,9 @@ WORKDIR /app
 
 ADD Pipfile Pipfile.lock uwsgi.ini ./
 RUN pipenv install --system --deploy --ignore-pipfile
-COPY websim websim
+
+# When running the container, map the websim subdir into this directory, e.g.:
+#     docker -v ~/uka21-websim/websim:/app/websim ...
+VOLUME /app/websim
+
 CMD ["uwsgi", "uwsgi.ini"]
