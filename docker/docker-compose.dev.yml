@@ -1,4 +1,19 @@
 services:
   app:
+    build:
+      target: dev
+    
+    # Only expose the service locally
     ports: 
       - 127.0.0.1:8080:8080
+
+    # Override the application file 
+    volumes:
+      - ../websim:/app/websim
+    # Run as the same user as the developer
+    user: ${USER}
+    # Automatic reload changes
+    environment: 
+      FLASK_APP: websim.server
+      FLASK_ENV: development
+    command: flask run -h 0.0.0.0 -p 8080
