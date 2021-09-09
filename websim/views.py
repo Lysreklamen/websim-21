@@ -9,6 +9,8 @@ from functools import wraps
 from .sign import Sign, SIGNS_DIR
 from . import auth
 
+SCRIPT_DIR = Path(__file__).parent.absolute()
+
 logger = logging.getLogger(__name__)
 
 def is_authenticated():
@@ -23,33 +25,7 @@ def inject_template_vars():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        password = request.form.get("password", "")
-        if auth.check_password(password):
-            resp = redirect("/")
-            resp.set_cookie("access-token", value=auth.generate_auth_token(), httponly=True, max_age=24*60*60)
-            return resp
-        return render_template("login.html", message="Wrong passwod!")
-    return render_template("login.html")
-
-@app.route("/logout")
-def logout():
-    resp = redirect("/")
-    resp.delete_cookie("access-token")
-    return resp
-
-@app.route("/simulator")
-def simulator():
-    return render_template("simulator.html")
-
-@app.route("/sign_debug")
-def sign_debug():
-    return render_template("sign_debug.html")
-
+    return send_file(Path(SCRIPT_DIR, "index.html"))
 
 #########################################################
 # The API endpoints are designed such that it would be

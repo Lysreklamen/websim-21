@@ -5,7 +5,7 @@ import json
 from typing import List
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
-SIGNS_DIR = Path(SCRIPT_DIR, "signs")
+SIGNS_DIR = Path(SCRIPT_DIR.parent, "signs")
 
 class Sign:
     def __init__(self, name: str, *, authenticated: bool = False):
