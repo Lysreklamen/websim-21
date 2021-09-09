@@ -29,7 +29,7 @@ def index():
 
 #########################################################
 # The API endpoints are designed such that it would be
-# possible to "render" a static version of all the view
+# possible to "render" each endpoint
 # and host the entire simulator statically
 ########################################################
 

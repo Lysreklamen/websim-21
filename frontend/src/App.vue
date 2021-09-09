@@ -1,22 +1,27 @@
 <template>
-    <div class="container-fluid">
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-          <a class="navbar-brand" href="/">Home</a>
-          <form class="d-flex" action="/login" method="POST">
-            <input class="form-control me-2" type="password" placeholder="Password" name="password" aria-label="Password">
-            <button class="btn btn-outline-success" type="submit">Login</button>
-          </form>
-      </nav>
-    </div>
+    <index v-if="activeSign === null" v-on:loadSign="onLoadSign"></index>
+    <simulator v-else></simulator>
 </template>
 
 <script>
+  import Index from './Index.vue';
+  import Simulator from './Simulator.vue';
+
   export default {
     name: 'app',
     components: {
+      Index,
+      Simulator,
     },
     data() {
       return {
+        activeSign: null
+      }
+    },
+    methods: {
+      onLoadSign(name) {
+        console.log("loading sign: ", name);
+        this.activeSign = name;
       }
     }
   }
