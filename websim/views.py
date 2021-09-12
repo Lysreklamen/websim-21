@@ -33,6 +33,23 @@ def index():
 # and host the entire simulator statically
 ########################################################
 
+@app.route("/api/login.json", methods=["GET", "POST"])
+def login():
+    if request.method != "POST":
+        return jsonify({"status": "error", "message": "Authentication is not supported on statically hosted version"}), 403
+    
+    data = request.json
+    if auth.check_password(data.get("password")):
+        resp = jsonify({"status": "success"})
+        resp.set_cookie("access-token", value=auth.generate_auth_token(), httponly=True, max_age=24*60*60)
+        return resp
+    return jsonify({"status": "error", "message": "Wrong password"}), 403
+
+@app.route("/api/logout.json", methods=["GET", "POST"])
+def logout():
+    resp = jsonify({"status": "success"})
+    resp.delete_cookie("access-token")
+    return resp
 
 @app.route("/api/signs.json")
 def api_sign_list():
