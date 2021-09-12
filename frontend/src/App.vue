@@ -1,6 +1,6 @@
 <template>
     <index v-if="activeSign === null" v-on:loadSign="onLoadSign"></index>
-    <simulator v-else></simulator>
+    <simulator v-bind:sign="activeSign" v-else></simulator>
 </template>
 
 <script>

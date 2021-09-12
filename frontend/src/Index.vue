@@ -5,8 +5,10 @@
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
           <h1>Available Signs:</h1>
           <b-list-group>
-            <b-list-group-item href="#" disabled>Loading signs...Please wait</b-list-group-item>
-            <b-list-group-item href="#does-nothing" v-on:click="wat">UKA17</b-list-group-item>
+            <b-list-group-item href="#" v-if="signs.length == 0" disabled>Loading signs...Please wait</b-list-group-item>
+            <template v-for="sign in signs">
+              <b-list-group-item href="#" v-on:click="loadSign(sign)">{{ sign.toUpperCase() }}</b-list-group-item>
+            </template>
           </b-list-group>
         </main>
       </div>
@@ -21,13 +23,19 @@
     components: {
       Navbar,
     },
+    created() {
+      fetch("api/signs.json")
+        .then(response => response.json())
+        .then(data => (this.signs = data));
+    },
     data() {
       return {
+        signs: []
       }
     },
     methods: {
-      wat() {
-        this.$emit("loadSign", "UKA17");
+      loadSign(sign) {
+        this.$emit("loadSign", sign);
       }
     }
   }
