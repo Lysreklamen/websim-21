@@ -9,7 +9,7 @@
           <Sequences v-bind:sign="sign"></Sequences>
         </b-tab>
         <b-tab title="Bulbs">
-          <p>Bulb selection interface will be here</p>
+          <Bulbs></Bulbs>
         </b-tab>
         <b-tab title="Development">
           <p>WebSocket development mode will be here</p>
@@ -26,12 +26,14 @@
   import { init, loadSign, pushFrame } from './simulator/sim.js';
   import { Fragment } from 'vue-fragment'
   import Sequences from './components/Sequences.vue'
+  import Bulbs from './components/Bulbs.vue'
 
   export default {
     name: 'simulator',
     components: { 
       Fragment, 
       Sequences, 
+      Bulbs,
     },
     props: {
       sign: String

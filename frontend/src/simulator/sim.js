@@ -5,6 +5,7 @@ import * as pg_helper from './polygon_helper.js'
 
 let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
+let bulbInfo = [];
 let active_frame_data = new Array(512).fill(0.5);
 
 export function init(canvas) {
@@ -252,7 +253,7 @@ export function loadSign(api_base) {
             
             const camera = app.root.findByName("camera");
             const globalLight = app.root.findByName("globalLight");
-            const bulbInfo = [];
+            bulbInfo = []
             for (const [group_index, j_group] of data['groups'].entries()) {
                 const group = new pc.Entity("group_"+group_index);
                 group.translate(j_group.pos[0], j_group.pos[1], 0.01);
@@ -365,4 +366,8 @@ export function loadSign(api_base) {
 
 export function pushFrame(frame_data) {
     active_frame_data = frame_data;
+}
+
+export function getBulbs() {
+    return bulbInfo;
 }
