@@ -20,7 +20,19 @@
         pwd: "",
       }
     },
+    created() {
+        this.updateAuthStatus();
+    },
     methods: {
+        updateAuthStatus() {
+            fetch('api/auth.json')
+                .then(response => response.json())
+                .then(data => {
+                    this.authenticated = data.authenticated;
+                }).catch((error)=> {
+                    this.authenticated = false;
+                })
+        },
         onSubmit(event) {
             event.preventDefault();
 

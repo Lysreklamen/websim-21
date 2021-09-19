@@ -51,6 +51,10 @@ def logout():
     resp.delete_cookie("access-token")
     return resp
 
+@app.route("/api/auth.json")
+def auth_status():
+    return jsonify({"authenticated": is_authenticated()})
+
 @app.route("/api/signs.json")
 def api_sign_list():
     """
