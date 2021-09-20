@@ -9,6 +9,7 @@
 
 <script>
 import { pushFrame } from "../simulator/sim.js";
+import ReconnectingWebSocket from 'reconnecting-websocket';
 
 export default {
   name: "Development",
@@ -34,7 +35,7 @@ export default {
   },
   methods: {
     connect() {
-      this.connection = new WebSocket("ws://localhost:5678/");
+      this.connection = new ReconnectingWebSocket("ws://localhost:5678/");
       this.connection.binaryType = "arraybuffer";
       this.connection.onopen = (event) => {
         console.log("opened");
