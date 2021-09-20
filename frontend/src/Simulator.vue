@@ -11,8 +11,8 @@
         <b-tab title="Bulbs">
           <Bulbs v-bind:bulbs="bulbs"></Bulbs>
         </b-tab>
-        <b-tab title="Development">
-          <p>WebSocket development mode will be here</p>
+        <b-tab title="Development" lazy>
+          <Development></Development>
         </b-tab>
         <b-tab title="Disabled" disabled>
           <p>I'm a disabled tab!</p>
@@ -27,6 +27,7 @@
   import { Fragment } from 'vue-fragment'
   import Sequences from './components/Sequences.vue'
   import Bulbs from './components/Bulbs.vue'
+  import Development from './components/Development.vue'
 
   export default {
     name: 'simulator',
@@ -34,6 +35,7 @@
       Fragment, 
       Sequences, 
       Bulbs,
+      Development,
     },
     props: {
       sign: String
