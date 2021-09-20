@@ -224,6 +224,8 @@ export function loadSign(api_base) {
 
     const scene_root = app.root.findByName("scene_root");
 
+    
+    let promise = 
     fetch(api_base+"/scene.json")
         .then(response => response.json())
         .then(data => {
@@ -362,6 +364,8 @@ export function loadSign(api_base) {
 
             bulbInfo.sort((a, b) => a.id - b.id);
         });
+
+        return promise;
 }
 
 export function pushFrame(frame_data) {

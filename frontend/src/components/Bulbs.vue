@@ -26,23 +26,16 @@
 </template>
 
 <script>
-import { getBulbs, pushFrame } from "../simulator/sim.js";
+import { pushFrame } from "../simulator/sim.js";
 
 export default {
   name: "Bulbs",
   components: {},
   props: {
-    sign: String,
-  },
-  created() {
-    // Replace with something smarter to ensure it being loaded
-    setTimeout(() => {
-      this.bulbs = getBulbs();
-    }, 1000);
+    bulbs: Array,
   },
   data() {
     return {
-      bulbs: [],
     };
   },
   methods: {

@@ -9,7 +9,7 @@
           <Sequences v-bind:sign="sign"></Sequences>
         </b-tab>
         <b-tab title="Bulbs">
-          <Bulbs></Bulbs>
+          <Bulbs v-bind:bulbs="bulbs"></Bulbs>
         </b-tab>
         <b-tab title="Development">
           <p>WebSocket development mode will be here</p>
@@ -23,7 +23,7 @@
 </template>
 
 <script>
-  import { init, loadSign, pushFrame } from './simulator/sim.js';
+  import { init, loadSign, getBulbs } from './simulator/sim.js';
   import { Fragment } from 'vue-fragment'
   import Sequences from './components/Sequences.vue'
   import Bulbs from './components/Bulbs.vue'
@@ -45,10 +45,14 @@
       const canvas = document.getElementById('application');
       init(canvas);
 
-      loadSign(api_base);
+      loadSign(api_base).then(() => {
+        this.bulbs = getBulbs();
+      })
+
     },
     data() {
       return {
+        bulbs: []
       }
     },
   }
