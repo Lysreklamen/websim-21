@@ -10,7 +10,7 @@ cd $DIR
 
 export COMPOSE_PROJECT_NAME=uka
 if [ -n "$FORCE_BUILD" ]; then
-    USER="$(id -u):$(id -g)" docker-compose build "$@"
+    USER="$(id -u):$(id -g)" docker-compose build
 fi    
 
 USER="$(id -u):$(id -g)" docker-compose up "$@"
