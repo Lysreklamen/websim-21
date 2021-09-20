@@ -17,3 +17,4 @@ To start developing within a container run the command:
 ```
 
 The container will automatically detect any file changes made locally and restart the service.
+The service itself can be reached in the browser at [http://localhost:8080](http://localhost:8080)

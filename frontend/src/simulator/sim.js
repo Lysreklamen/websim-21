@@ -1,10 +1,11 @@
-import * as pc from './playcanvas.js'
+import * as pc from 'playcanvas'
 import * as pcx from './extras/index.js'
-import {earcut} from './earcut.js';
+import earcut from 'earcut';
 import * as pg_helper from './polygon_helper.js'
 
 let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
+let bulbInfo = [];
 let active_frame_data = new Array(512).fill(0.5);
 
 export function init(canvas) {
@@ -36,10 +37,10 @@ export function init(canvas) {
     camera.setPosition(0, 0, 7);
 
     // add the fly camera script to the camera
-    app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
-        camera.addComponent("script");
-        camera.script.create("flyCamera");
-    });
+    // app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
+    //     camera.addComponent("script");
+    //     camera.script.create("flyCamera");
+    // });
 
 
     // create directional light entity
@@ -217,12 +218,14 @@ function create_alu_mesh_from_path(node, path, outside) {
     return new pc.MeshInstance(mesh, material, node);
 }
 
-export function loadSign(api_base, bulbCallback) {
+export function loadSign(api_base) {
     // Reset the scene first
     reset();
 
     const scene_root = app.root.findByName("scene_root");
 
+    
+    let promise = 
     fetch(api_base+"/scene.json")
         .then(response => response.json())
         .then(data => {
@@ -252,7 +255,7 @@ export function loadSign(api_base, bulbCallback) {
             
             const camera = app.root.findByName("camera");
             const globalLight = app.root.findByName("globalLight");
-            const bulbInfo = [];
+            bulbInfo = []
             for (const [group_index, j_group] of data['groups'].entries()) {
                 const group = new pc.Entity("group_"+group_index);
                 group.translate(j_group.pos[0], j_group.pos[1], 0.01);
@@ -360,17 +363,15 @@ export function loadSign(api_base, bulbCallback) {
             }
 
             bulbInfo.sort((a, b) => a.id - b.id);
-            for (const bulb of bulbInfo) {
-                bulbCallback({
-                    id: bulb.id,
-                    redChannel: bulb.channels[0],
-                    greenChannel: bulb.channels[1],
-                    blueChannel: bulb.channels[2],
-                });
-            }
         });
+
+        return promise;
 }
 
 export function pushFrame(frame_data) {
     active_frame_data = frame_data;
+}
+
+export function getBulbs() {
+    return bulbInfo;
 }
