@@ -2,6 +2,7 @@ import * as pc from 'playcanvas'
 import * as pcx from './extras/index.js'
 import earcut from 'earcut';
 import * as pg_helper from './polygon_helper.js'
+import createFlyCameraScript from './fly-camera.js';
 
 let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
@@ -37,6 +38,8 @@ export function init(canvas) {
     camera.setPosition(0, 0, 7);
 
     // add the fly camera script to the camera
+    camera.addComponent("script");
+    camera.script.create(createFlyCameraScript());
     // app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
     //     camera.addComponent("script");
     //     camera.script.create("flyCamera");
