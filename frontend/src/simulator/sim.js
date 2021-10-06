@@ -9,6 +9,7 @@ let bulbs = []; // map of bulb ID to bulb node
 let bulbInfo = [];
 let active_frame_data = new Array(512).fill(0.5);
 let active_frame_source = null; // The frame source (IE PGM player)
+let camera = null;
 
 export function init(canvas) {
     app = new pc.Application(canvas, {
@@ -31,12 +32,12 @@ export function init(canvas) {
     gesims.translate(0, 0, 0);
 
     // create camera entity
-    const camera = new pc.Entity('camera');
+    camera = new pc.Entity('camera');
     camera.addComponent('camera', {
         clearColor: new pc.Color(0.1, 0.1, 0.1)
     });
     app.root.addChild(camera);
-    camera.setPosition(0, 0, 7);
+    resetCameraPosition();
 
     // add the fly camera script to the camera
     camera.addComponent("script");
@@ -391,4 +392,9 @@ export function pushFrame(frame_data) {
 
 export function getBulbs() {
     return bulbInfo;
+}
+
+export function resetCameraPosition() {
+    camera.setEulerAngles(0, 0, 0);
+    camera.setPosition(0, 0, 7);
 }

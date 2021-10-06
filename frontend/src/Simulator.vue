@@ -14,8 +14,8 @@
         <b-tab title="Development" lazy>
           <Development></Development>
         </b-tab>
-        <b-tab title="Disabled" disabled>
-          <p>I'm a disabled tab!</p>
+        <b-tab title="Camera Controls">
+          <b-button v-on:click="resetCam">Reset!</b-button>
         </b-tab>
       </b-tabs>
     </footer>
@@ -23,7 +23,7 @@
 </template>
 
 <script>
-  import { init, loadSign, getBulbs } from './simulator/sim.js';
+  import { init, loadSign, getBulbs, resetCameraPosition } from './simulator/sim.js';
   import { Fragment } from 'vue-fragment'
   import Sequences from './components/Sequences.vue'
   import Bulbs from './components/Bulbs.vue'
@@ -51,6 +51,11 @@
         this.bulbs = getBulbs();
       })
 
+    },
+    methods: {
+      resetCam() {
+        resetCameraPosition();
+      }
     },
     data() {
       return {
