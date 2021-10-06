@@ -37,11 +37,12 @@ export function init(canvas) {
         clearColor: new pc.Color(0.1, 0.1, 0.1)
     });
     app.root.addChild(camera);
-    resetCameraPosition();
-
+    
     // add the fly camera script to the camera
     camera.addComponent("script");
     camera.script.create(createFlyCameraScript());
+
+    resetCameraPosition();
     // app.assets.loadFromUrl('static/js/fly-camera.js', 'script', function (err, asset) {
     //     camera.addComponent("script");
     //     camera.script.create("flyCamera");
@@ -395,6 +396,5 @@ export function getBulbs() {
 }
 
 export function resetCameraPosition() {
-    camera.setEulerAngles(0, 0, 0);
-    camera.setPosition(0, 0, 7);
+    camera.script["flyCamera"].resetCamera();
 }

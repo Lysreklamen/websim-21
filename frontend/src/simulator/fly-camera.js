@@ -101,5 +101,13 @@ export default function() {
             this.lmbDown = false;
         }
     };
+
+    FlyCamera.prototype.resetCamera = function(event) {
+        this.ex = 0;
+        this.ey = 0;
+        this.moved = false;
+        this.entity.setEulerAngles(0, 0, 0);
+        this.entity.setPosition(0, 0, 7);
+    }
     return FlyCamera;
 }
