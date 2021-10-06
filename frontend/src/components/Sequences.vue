@@ -18,11 +18,11 @@ export default {
     sign: String,
   },
   created() {
-    const api_base = "api/signs/" + this.sign;
-
-     fetch(api_base + "/pgms.json").then(response => response.json()).then(data => {
-       this.pgms = data;
-    });
+    this.update();
+    this.update_timer = setInterval(this.update, 5000);
+  },
+  destroyed() {
+    clearInterval(this.update_timer);
   },
   data() {
     return {
@@ -33,6 +33,12 @@ export default {
     play(pgm_path) {
       const api_base = "api/signs/" + this.sign;
       startFrameSource(new PGMPlayer(api_base + "/pgms/" + pgm_path, pushFrame));
+    },
+    update() {
+      const api_base = "api/signs/" + this.sign;
+      fetch(api_base + "/pgms.json").then(response => response.json()).then(data => {
+        this.pgms = data;
+      });
     }
   }
 }
