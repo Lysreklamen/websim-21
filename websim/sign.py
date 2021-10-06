@@ -67,7 +67,8 @@ class Sign:
         for f in self.pgm_dir.glob("*.pgm"):
             out.append(f)
 
-        return out
+
+        return sorted(out)
 
     def get_pgm(self, name: str) -> Path:
         if name.startswith("."):
