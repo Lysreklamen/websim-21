@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { pushFrame } from "../simulator/sim.js";
+import { pushFrame, cancelActiveFrameSource } from "../simulator/sim.js";
 import ReconnectingWebSocket from 'reconnecting-websocket';
 
 export default {
@@ -25,6 +25,7 @@ export default {
   },
   mounted() {
     console.log("Loaded development tab!");
+    cancelActiveFrameSource();
     this.connect();
   },
   destroyed() {

@@ -8,6 +8,7 @@ let app = null; // pc.Application
 let bulbs = []; // map of bulb ID to bulb node
 let bulbInfo = [];
 let active_frame_data = new Array(512).fill(0.5);
+let active_frame_source = null; // The frame source (IE PGM player)
 
 export function init(canvas) {
     app = new pc.Application(canvas, {
@@ -369,6 +370,19 @@ export function loadSign(api_base) {
         });
 
         return promise;
+}
+
+export function startFrameSource(frame_source) {
+    cancelActiveFrameSource()
+    active_frame_source = frame_source;
+    active_frame_source.start();
+}
+
+export function cancelActiveFrameSource() {
+    if(active_frame_source !== null) {
+        active_frame_source.cancel();
+        active_frame_source = null;
+    }
 }
 
 export function pushFrame(frame_data) {

@@ -8,8 +8,8 @@
 
 <script>
 
-import { PlayPGM } from '../simulator/pgmplayer.js'
-import { pushFrame } from '../simulator/sim.js'
+import { PGMPlayer } from '../simulator/pgmplayer.js'
+import { pushFrame, startFrameSource } from '../simulator/sim.js'
 
 export default {
   name: "Sequences",
@@ -32,7 +32,7 @@ export default {
   methods: {
     play(pgm_path) {
       const api_base = "api/signs/" + this.sign;
-      PlayPGM(api_base + "/pgms/" + pgm_path, pushFrame);
+      startFrameSource(new PGMPlayer(api_base + "/pgms/" + pgm_path, pushFrame));
     }
   }
 }
