@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import { pushFrame } from "../simulator/sim.js";
+import { pushFrame, cancelActiveFrameSource } from "../simulator/sim.js";
 
 export default {
   name: "Bulbs",
@@ -40,6 +40,8 @@ export default {
   },
   methods: {
     onChannelsClick(channels) {
+      cancelActiveFrameSource();
+
       const frame = new Array(512).fill(0);
       for (const channel of channels) {
         // Channels are 1-indexed, but the frame is 0-indexed
