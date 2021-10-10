@@ -81,7 +81,7 @@ def api_sign_list():
         except ValueError:
             logger.warning(f"The directory signs/{f.name} could not be validated as a valid name. ", exc_info=True)
 
-    return jsonify(signs)
+    return jsonify(sorted(signs))
 
 def sign_api(f):
     """
@@ -131,3 +131,12 @@ def api_sign_pgms(sign: Sign):
 @sign_api
 def api_sign_get_pgm(sign: Sign, pgm_name: str):
     return send_file(sign.get_pgm(pgm_name), mimetype='text/plain')
+
+
+@app.route("/api/signs/<sign_name>/playlists.json")
+@sign_api
+def api_sign_playlists(sign: Sign):
+    out = []
+    for f in sign.list_playlists():
+        out.append(f)
+    return jsonify(out)

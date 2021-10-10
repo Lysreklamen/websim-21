@@ -36,6 +36,11 @@ export class PGMPlayer {
         this.frame_callback = frame_callback;
         this.pgm_lines = makeTextFileLineIterator(url);
         this.cancelled = false;
+        this.on_completed = null;
+    }
+
+    setOnCompleted(cb) {
+        this.on_completed = cb;
     }
 
     async start() {
@@ -66,6 +71,10 @@ export class PGMPlayer {
             const frame_data = line.trim().split(" ").map(x => parseInt(x)/max_value);
             this.frame_callback(frame_data);
             await new Promise(r => setTimeout(r, 50)); // 20 FPS
+        }
+
+        if (this.on_completed) {
+            this.on_completed();
         }
     }
 

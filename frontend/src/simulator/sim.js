@@ -34,7 +34,7 @@ export function init(canvas) {
     // create camera entity
     camera = new pc.Entity('camera');
     camera.addComponent('camera', {
-        clearColor: new pc.Color(0.1, 0.1, 0.1)
+        clearColor: new pc.Color(0, 0, 0)
     });
     app.root.addChild(camera);
     

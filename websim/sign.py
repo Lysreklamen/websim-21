@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 import json
-from typing import List
+from typing import Any, Dict, List
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 SIGNS_DIR = Path(SCRIPT_DIR.parent, "signs")
@@ -80,3 +80,19 @@ class Sign:
             raise ValueError("Path traversal attempt detected.")
         
         return pgm_path
+
+    def list_playlists(self) -> List[Dict[str, Any]]:
+        out = []
+
+        for f in self.pgm_dir.glob("*.txt"):
+            playlist = {
+                "name": f.name,
+                "pgms": []
+            }
+
+            for pgm in f.read_text().splitlines():
+                playlist["pgms"].append(pgm.strip())
+
+            out.append(playlist)
+
+        return sorted(out, key=lambda x: x["name"])
