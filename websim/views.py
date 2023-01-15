@@ -17,6 +17,14 @@ def is_authenticated():
     auth_token = request.cookies.get("access-token", "")
     return auth.is_authenticated(auth_token)
 
+def cors(f):
+    @wraps(f)
+    def cors_decorated(*args, **kwargs):
+        response = f(*args, **kwargs)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+    return cors_decorated
+
 @app.context_processor
 def inject_template_vars():
     return {
@@ -24,6 +32,7 @@ def inject_template_vars():
     }
 
 @app.route("/")
+@cors
 def index():
     return send_file(Path(SCRIPT_DIR, "index.html"))
 
@@ -34,6 +43,7 @@ def index():
 ########################################################
 
 @app.route("/api/login.json", methods=["GET", "POST"])
+@cors
 def login():
     if request.method != "POST":
         return jsonify({"status": "error", "message": "Authentication is not supported on statically hosted version"}), 403
@@ -46,16 +56,19 @@ def login():
     return jsonify({"status": "error", "message": "Wrong password"}), 403
 
 @app.route("/api/logout.json", methods=["GET", "POST"])
+@cors
 def logout():
     resp = jsonify({"status": "success"})
     resp.delete_cookie("access-token")
     return resp
 
 @app.route("/api/auth.json")
+@cors
 def auth_status():
     return jsonify({"authenticated": is_authenticated()})
 
 @app.route("/api/signs.json")
+@cors
 def api_sign_list():
     """
     API for listing available signs.
@@ -109,18 +122,21 @@ def sign_api(f):
 
 @app.route("/api/signs/<sign_name>/scene.json")
 @sign_api
-def api_sign_scene(sign: Sign):  
+@cors
+def api_sign_scene(sign: Sign):
     return send_file(sign.scene_def)
 
 
 @app.route("/api/signs/<sign_name>/assets/<asset_name>")
 @sign_api
+@cors
 def api_sign_asset(sign: Sign, asset_name: str):
     return send_file(sign.get_asset(asset_name))
 
 
 @app.route("/api/signs/<sign_name>/pgms.json")
 @sign_api
+@cors
 def api_sign_pgms(sign: Sign):
     out = []
     for f in sign.list_pgms():
@@ -129,12 +145,14 @@ def api_sign_pgms(sign: Sign):
 
 @app.route("/api/signs/<sign_name>/pgms/<pgm_name>")
 @sign_api
+@cors
 def api_sign_get_pgm(sign: Sign, pgm_name: str):
     return send_file(sign.get_pgm(pgm_name), mimetype='text/plain')
 
 
 @app.route("/api/signs/<sign_name>/playlists.json")
 @sign_api
+@cors
 def api_sign_playlists(sign: Sign):
     out = []
     for f in sign.list_playlists():

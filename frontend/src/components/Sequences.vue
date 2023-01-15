@@ -31,11 +31,11 @@ export default {
   },
   methods: {
     play(pgm_path) {
-      const api_base = "api/signs/" + this.sign;
+      const api_base = "http://localhost:8081/api/signs/" + this.sign;
       startFrameSource(new PGMPlayer(api_base + "/pgms/" + pgm_path, pushFrame));
     },
     update() {
-      const api_base = "api/signs/" + this.sign;
+      const api_base = "http://localhost:8081/api/signs/" + this.sign;
       fetch(api_base + "/pgms.json").then(response => response.json()).then(data => {
         this.pgms = data;
       });

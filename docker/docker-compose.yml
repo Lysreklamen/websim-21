@@ -11,6 +11,8 @@ services:
     volumes:
       - ../websim:/app/websim
       - ../signs:/app/signs
+    ports:
+      - 127.0.0.1:8081:8080
   # The jsdev server will 
   jsdev:
     build:

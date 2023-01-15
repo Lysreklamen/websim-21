@@ -44,7 +44,7 @@ export default {
       // Select the next PGM
       let pgm_path = this.active_playlist.pgms[this.playlist_idx % this.active_playlist.pgms.length];
 
-      const api_base = "api/signs/" + this.sign;
+      const api_base = "http://localhost:8081/api/signs/" + this.sign;
       let player = new PGMPlayer(api_base + "/pgms/" + pgm_path, pushFrame);
 
       player.setOnCompleted(() => {
@@ -54,7 +54,7 @@ export default {
       startFrameSource(player);
     },
     update() {
-      const api_base = "api/signs/" + this.sign;
+      const api_base = "http://localhost:8081/api/signs/" + this.sign;
       fetch(api_base + "/playlists.json").then(response => response.json()).then(data => {
         this.playlists = data;
       });

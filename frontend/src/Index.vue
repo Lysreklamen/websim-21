@@ -39,7 +39,7 @@ export default {
   },
   methods: {
     updateSigns() {
-      fetch("api/signs.json")
+      fetch("http://localhost:8081/api/signs.json")
         .then((response) => response.json())
         .then((data) => (this.signs = data));
     },

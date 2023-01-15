@@ -46,7 +46,7 @@
       sign: String
     },
     mounted() {
-      const api_base = "api/signs/" + this.sign;
+      const api_base = "http://localhost:8081/api/signs/" + this.sign;
 
       // create a PlayCanvas application
       const canvas = document.getElementById('application');

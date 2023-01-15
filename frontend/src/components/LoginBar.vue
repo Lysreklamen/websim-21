@@ -25,7 +25,7 @@
     },
     methods: {
         updateAuthStatus() {
-            fetch('api/auth.json')
+            fetch('http://localhost:8081/api/auth.json')
                 .then(response => response.json())
                 .then(data => {
                     this.authenticated = data.authenticated;
@@ -36,7 +36,7 @@
         onSubmit(event) {
             event.preventDefault();
 
-            fetch('api/login.json', {
+            fetch('http://localhost:8081/api/login.json', {
                     method: 'POST', // or 'PUT'
                     headers: {
                         'Content-Type': 'application/json',
@@ -61,7 +61,7 @@
         },
         onLogout(event) {
             event.preventDefault();
-            fetch('api/logout.json')
+            fetch('http://localhost:8081/api/logout.json')
                 .then(response => response.json())
                 .then(data => {
                     this.authenticated = false;
