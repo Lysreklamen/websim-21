@@ -26,9 +26,9 @@ FROM node:16-bullseye as jsdev
 
 RUN mkdir /app
 WORKDIR /app
-ADD frontend/package*.json frontend/
+ADD frontend/package*.json frontend/vue.config.js frontend/
 RUN npm install --prefix frontend
-CMD npm run --prefix frontend serve 
+CMD npm run --prefix frontend serve
 
 # For development we expect the files to be bindmounted into the containers
 # This allows for faster iterations as the container does not have to be rebuilt each time
