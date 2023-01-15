@@ -20,6 +20,7 @@ services:
       - pydev
     user: ${USER}
     volumes:
-      - ../frontend:/app/frontend
+      - ../frontend/public:/app/frontend/public
+      - ../frontend/src:/app/frontend/src
     ports:
       - 127.0.0.1:8080:8080
