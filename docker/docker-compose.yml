@@ -9,7 +9,7 @@ services:
       target: pydev
     user: ${USER}
     volumes:
-      - ../websim:/app/websim
+      - ../backend:/app/backend
       - ../signs:/app/signs
   # The jsdev server will 
   jsdev:

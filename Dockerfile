@@ -18,15 +18,23 @@ WORKDIR /app
 
 ADD Pipfile Pipfile.lock uwsgi.ini ./
 RUN pipenv install --system --deploy --ignore-pipfile
-ENV FLASK_APP=websim.server FLASK_ENV=development
+ENV FLASK_APP=backend.server FLASK_ENV=development
 
 CMD flask run -h 0.0.0.0 -p 8080
+
+# ------------------------------------------------------------------------------
 
 FROM node:16-bullseye as jsdev
 
 RUN mkdir /app
 WORKDIR /app
 ADD frontend/package*.json frontend/vue.config.js frontend/
+
+# This fixes an issue where NPM is unhappy about its cache directory being owned by root
+RUN mkdir /.npm
+RUN chown -R `id -u`:`id -g` /.npm
+ENV npm_config_cache=/.npm
+
 RUN npm install --prefix frontend
 CMD npm run --prefix frontend serve
 
@@ -34,16 +42,20 @@ CMD npm run --prefix frontend serve
 # This allows for faster iterations as the container does not have to be rebuilt each time
 # we want to test something
 
+# ------------------------------------------------------------------------------
+
 # For production we build the Javascript frontend to get a static distribution output
 FROM jsdev as js-staging
 COPY frontend frontend
 RUN npm run build --prefix frontend
 
-# For the production container we copy the websim files into the container image
+# ------------------------------------------------------------------------------
+
+# For the production container we copy both the backend files and the frontend files into the container image
 FROM pydev as prod
-COPY websim websim
+COPY backend backend
 COPY signs signs
-COPY --from=js-staging /app/frontend/dist/ websim/
+COPY --from=js-staging /app/frontend/dist/ backend/
 
 ENV FLASK_ENV=production
 CMD ["uwsgi", "uwsgi.ini"]
