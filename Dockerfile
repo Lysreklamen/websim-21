@@ -24,16 +24,11 @@ CMD flask run -h 0.0.0.0 -p 8080
 
 # ------------------------------------------------------------------------------
 
-FROM node:16-bullseye as jsdev
+FROM node:19-bullseye as jsdev
 
 RUN mkdir /app
 WORKDIR /app
 ADD frontend/package*.json frontend/vue.config.js frontend/
-
-# This fixes an issue where NPM is unhappy about its cache directory being owned by root
-RUN mkdir /.npm
-RUN chown -R `id -u`:`id -g` /.npm
-ENV npm_config_cache=/.npm
 
 RUN npm install --prefix frontend
 CMD npm run --prefix frontend serve
